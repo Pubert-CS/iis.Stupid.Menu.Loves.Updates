@@ -40,6 +40,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static iiMenu.Extensions.VRRigExtensions;
@@ -3523,13 +3524,14 @@ namespace iiMenu.Mods
                 VRRig.LocalRig.enabled = true;
             DistancePatch.enabled = false;
 
-            GetProjectile($"{Projectiles.SnowballName}LeftAnchor").SetSnowballActiveLocal(false);
-            GetProjectile($"{Projectiles.SnowballName}SnowballRightAnchor").SetSnowballActiveLocal(false);
+            foreach (SnowballThrowable snowball in snowballDict.Values)
+                try { snowball.SetSnowballActiveLocal(false); } catch { }
         }
 
         public static bool SnowballHandIndex;
         public static bool NoTeleportSnowballs;
         public static bool NoDelaySnowballs;
+        public static int SnowballTime;
 
         public static void BetaSpawnSnowball(Vector3 Pos, Vector3 Vel, int Mode, Player Target = null, int? customScale = null)
         {
@@ -3566,6 +3568,14 @@ namespace iiMenu.Mods
 
                 for (int i = 0; i < snowballMultiplicationFactor; i++)
                 {
+                    SnowballTime++;
+
+                    if (NoDelaySnowballs && SnowballTime >= 10)
+                    {
+                        Projectiles.ChangeGrowingProjectile();
+                        SnowballTime = 0;
+                    }
+
                     SnowballHandIndex = !SnowballHandIndex;
                     Vel = Vel.ClampMagnitudeSafe(50f);
 
@@ -3609,11 +3619,11 @@ namespace iiMenu.Mods
                     VRRig.LocalRig.transform.position = archivePosition;
                     SendSerialize(GorillaTagger.Instance.myVRRig.GetView, options);
                 }
-
-                if (NoDelaySnowballs && SnowballHandIndex)
-                    Projectiles.ChangeGrowingProjectile();
             }
-            catch { }
+            catch (Exception e) 
+            {
+                LogManager.LogError($"Error in BetaSpawnSnowball: {e}");
+            }
 
             RPCProtection();
         }
