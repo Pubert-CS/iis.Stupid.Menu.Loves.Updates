@@ -40,7 +40,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static iiMenu.Extensions.VRRigExtensions;
@@ -683,7 +682,7 @@ namespace iiMenu.Mods
                 return;
             }
 
-            if (!PhotonNetwork.IsMasterClient)
+            if (!NetworkSystem.Instance.IsMasterClient)
             {
                 VirtualStumpMasterKickGun();
                 return;
@@ -793,7 +792,7 @@ namespace iiMenu.Mods
 
             for (int i = 0; i < 4; i++)
             {
-                binaryWriter.Write(ManagerRegistry.GhostReactor.GameEntityManager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
+                binaryWriter.Write(ManagerRegistry.CustomMaps.GameEntityManager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
                 binaryWriter.Write(GorillaTagger.Instance.bodyCollider.transform.position.Pack());
                 binaryWriter.Write(BitPackUtils.PackQuaternionForNetwork(GorillaTagger.Instance.bodyCollider.transform.rotation));
                 binaryWriter.Write(0L);
@@ -1909,7 +1908,10 @@ namespace iiMenu.Mods
                     }
                 }
                 else
+                {
+                    characterIndex = 0;
                     basePosition = null;
+                }
             }
         }
 
@@ -1950,7 +1952,10 @@ namespace iiMenu.Mods
                     }
                 }
                 else
+                {
+                    characterIndex = 0;
                     basePosition = null;
+                }
             }
         }
 
@@ -3659,6 +3664,35 @@ namespace iiMenu.Mods
             }
         }
 
+        private static Vector3? snowballNukePosition;
+        private static Vector3 velocity;
+        public static void SnowballNukeGun()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                GameObject NewPointer = GunData.NewPointer;
+
+                if (GetGunInput(true))
+                {
+                    snowballNukePosition ??= NewPointer.transform.position + (Vector3.up * 50f);
+                    snowballNukePosition += Time.unscaledDeltaTime * Physics.gravity;
+                    velocity += Time.unscaledDeltaTime * Physics.gravity;
+
+                    if (Time.time > snowballDelay)
+                    {
+                        BetaSpawnSnowball(snowballNukePosition.Value + RandomVector3(velocity.magnitude * 0.25f).X_Z(), velocity, 0);
+                        snowballDelay = Time.time + SnowballSpawnDelay;
+                    }
+                }
+            }
+            else
+            {
+                snowballNukePosition = null;
+                velocity = Vector3.zero;
+            }
+        }
+
         public static void SnowballRain()
         {
             if (rightTrigger > 0.5f)
@@ -3707,6 +3741,67 @@ namespace iiMenu.Mods
             }
         }
 
+        public static void SnowballSpam()
+        {
+            if ((rightGrab || Mouse.current.leftButton.isPressed) && Time.time > snowballDelay)
+            {
+                Vector3 startpos = GorillaTagger.Instance.rightHandTransform.position;
+                Vector3 charvel = GTPlayer.Instance.RigidbodyVelocity;
+
+                if (Buttons.GetIndex("Shoot Projectiles").enabled)
+                {
+                    charvel = GTPlayer.Instance.RigidbodyVelocity + GetGunDirection(GorillaTagger.Instance.rightHandTransform) * ShootStrength;
+                    if (Mouse.current.leftButton.isPressed)
+                    {
+                        Ray ray = TPC.ScreenPointToRay(Mouse.current.position.ReadValue());
+                        Physics.Raycast(ray, out var hit, 512f, NoInvisLayerMask());
+                        charvel = hit.point - GorillaTagger.Instance.rightHandTransform.transform.position;
+                        charvel.Normalize();
+                        charvel *= ShootStrength * 2f;
+                    }
+                }
+
+                if (Buttons.GetIndex("Random Direction").enabled)
+                    charvel = RandomVector3(100f);
+
+                if (Buttons.GetIndex("Above Players").enabled)
+                {
+                    VRRig targetRig = GetTargetPlayer();
+                    startpos = targetRig.transform.position + new Vector3(0f, 1f, 0f);
+                }
+
+                if (Buttons.GetIndex("Rain Projectiles").enabled)
+                {
+                    startpos = GorillaTagger.Instance.headCollider.transform.position + new Vector3(Random.Range(-2f, 2f), 2f, Random.Range(-2f, 2f));
+                    charvel = Vector3.zero;
+                }
+
+                if (Buttons.GetIndex("Projectile Aura").enabled)
+                {
+                    float time = Time.frameCount;
+                    startpos = GorillaTagger.Instance.headCollider.transform.position + new Vector3(MathF.Cos(time / 20), 2, MathF.Sin(time / 20));
+                }
+
+                if (Buttons.GetIndex("True Projectile Aura").enabled)
+                {
+                    startpos = GorillaTagger.Instance.headCollider.transform.position + RandomVector3();
+                    charvel = RandomVector3(10f);
+                }
+
+                if (Buttons.GetIndex("Projectile Fountain").enabled)
+                {
+                    startpos = GorillaTagger.Instance.headCollider.transform.position + new Vector3(0, 1, 0);
+                    charvel = new Vector3(Random.Range(-10, 10), 15, Random.Range(-10, 10));
+                }
+
+                if (Buttons.GetIndex("Include Hand Velocity").enabled)
+                    charvel = GTPlayer.Instance.RightHand.velocityTracker.GetAverageVelocity(true, 0);
+
+                BetaSpawnSnowball(startpos, charvel, 0);
+                snowballDelay = Time.time + SnowballSpawnDelay;
+            }
+        }
+
         public static void SnowballGun()
         {
             if (GetGunInput(false))
@@ -3738,6 +3833,27 @@ namespace iiMenu.Mods
 
                 BetaSpawnSnowball(GorillaTagger.Instance.rightHandTransform.position, velocity, 0);
                 snowballDelay = Time.time + SnowballSpawnDelay;
+            }
+        }
+
+        public static void SnowballShotgun()
+        {
+            if ((rightGrab || Mouse.current.leftButton.isPressed) && Time.time > snowballDelay)
+            {
+                Vector3 velocity = GetGunDirection(GorillaTagger.Instance.rightHandTransform) * (ShootStrength * 5f);
+                if (Mouse.current.leftButton.isPressed)
+                {
+                    Ray ray = TPC.ScreenPointToRay(Mouse.current.position.ReadValue());
+                    Physics.Raycast(ray, out var hit, 512f, NoInvisLayerMask());
+                    velocity = hit.point - GorillaTagger.Instance.rightHandTransform.transform.position;
+                    velocity.Normalize();
+                    velocity *= ShootStrength * 2f;
+                }
+
+                for (int i = 0; i < 5; i++)
+                    BetaSpawnSnowball(GorillaTagger.Instance.rightHandTransform.position, velocity + RandomVector3(5f), 0);
+
+                snowballDelay = Time.time + (SnowballSpawnDelay * 5);
             }
         }
 

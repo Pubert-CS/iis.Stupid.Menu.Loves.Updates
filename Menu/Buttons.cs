@@ -1155,7 +1155,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Large Snowballs", enableMethod =() => EnablePatch.enabled = true, disableMethod =() => EnablePatch.enabled = false, toolTip = "Makes snowballs by default the largest size."},
                 new ButtonInfo { buttonText = "Spaz Snowballs <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Fun.SpazSnowballs, toolTip = "Randomizes the size of the snowballs. Credits to test for the idea."},
 
-                new ButtonInfo { buttonText = "Multiply Snowballs", method =() => ThrowPatch.enabled = true, disableMethod =() => ThrowPatch.enabled = false, toolTip = "Multiplies the snowballs you spawn by 5."},
+                new ButtonInfo { buttonText = "Multiply Snowballs", method =() => ThrowPatch.enabled = true, disableMethod =() => ThrowPatch.enabled = false, toolTip = "Multiplies the snowballs you throw by 5."},
 
                 new ButtonInfo { buttonText = "Fast Snowballs", overlapText = "Fast Projectiles", method = Fun.FastSnowballs, disableMethod = Fun.FixSnowballs, toolTip = "Makes projectiles go really fast when thrown."},
                 new ButtonInfo { buttonText = "Slow Snowballs", overlapText = "Slow Projectiles", method = Fun.SlowSnowballs, disableMethod = Fun.FixSnowballs, toolTip = "Makes projectiles go really slow when thrown."},
@@ -1662,8 +1662,11 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Projectile Lag Gun", method = Projectiles.ProjectileLagGun, toolTip = "Lags whoever your hand desires using the firework projectiles."},
                 new ButtonInfo { buttonText = "Projectile Lag All", enableMethod = Projectiles.ProjectileLagAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Lags everybody in the room using the firework projectiles."},
 
-                new ButtonInfo { buttonText = "Snowball Airstrike Gun", method = Overpowered.SnowballAirstrikeGun, toolTip = "Spawns a snowball airstrike wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Spam", method = Overpowered.SnowballSpam, toolTip = "Spams snowballs when holding <color=green>grip</color>. You can change the projectile(s) in Settings > Projectile Settings"},
+
                 new ButtonInfo { buttonText = "Snowball Gun", method = Overpowered.SnowballGun, toolTip = "Spawns a snowball wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Nuke Gun", method = Overpowered.SnowballNukeGun, toolTip = "Spawns a long of snowballs airstriking from the sky at wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Airstrike Gun", method = Overpowered.SnowballAirstrikeGun, toolTip = "Spawns a snowball airstrike wherever your hand desires."},
 
                 new ButtonInfo { buttonText = "Snowball Rain <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballRain, toolTip = "Rains snowballs around you when holding <color=green>trigger</color>."},
                 new ButtonInfo { buttonText = "Snowball Hail <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballHail, toolTip = "Hails snowballs around you when holding <color=green>trigger</color>."},
@@ -1673,6 +1676,8 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Snowball Minigun", method = Overpowered.SnowballMinigun, toolTip = "Spawns snowballs towards wherever your hand desires."},
                 new ButtonInfo { buttonText = "Give Snowball Minigun", method = Overpowered.GiveSnowballMinigun, toolTip = "Gives whoever your hand desires a snowball minigun." },
+
+                new ButtonInfo { buttonText = "Snowball Shotgun", method = Overpowered.SnowballShotgun, toolTip = "Spawns snowballs around wherever your hand desires."},
 
                 new ButtonInfo { buttonText = "Snowball Boxing", method = Overpowered.SnowballBoxing, toolTip = "Gives everyone punch mod with the snowballs."},
                 new ButtonInfo { buttonText = "Snowball Dash <color=grey>[</color><color=green>A</color><color=grey>]</color>", method = Overpowered.SnowballDash, toolTip = "Allows other players to dash themself into the air with the snowballs."},
