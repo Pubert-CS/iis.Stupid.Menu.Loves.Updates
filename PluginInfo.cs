@@ -2,7 +2,7 @@
  * ii's Stupid Menu  PluginInfo.cs
  * A mod menu for Gorilla Tag with over 1000+ mods
  *
- * Copyright (C) 2025  Goldentrophy Software
+ * Copyright (C) 2026  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ namespace iiMenu
         public const string GUID = "org.iidk.gorillatag.iimenu";
         public const string Name = "ii's Stupid Menu";
         public const string Description = "Created by @crimsoncauldron with love <3";
-        public const string BuildTimestamp = "2026-01-11T21:21:01Z";
+        public const string BuildTimestamp = "2026-01-12T03:28:08Z";
         public const string Version = "8.0.1";
 
         public const string BaseDirectory = "iisStupidMenu";
