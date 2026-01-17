@@ -1094,7 +1094,7 @@ namespace iiMenu.Menu
 
                         if (legacyGhostview)
                         {
-                            if (GhostRig.gameObject.activeSelf)
+                            if (GhostRig != null && GhostRig.gameObject.activeSelf)
                             {
                                 GhostRig.gameObject.SetActive(false);
                                 GhostRig.transform.position = Vector3.one * float.MaxValue;
@@ -1110,10 +1110,11 @@ namespace iiMenu.Menu
                         }
                         else
                         {
-                            if (legacyGhostViewLeft.activeSelf)
+                            if (legacyGhostViewLeft != null && legacyGhostViewLeft.activeSelf)
                                 legacyGhostViewLeft.SetActive(false);
-                            if (legacyGhostViewRight.activeSelf)
+                            if (legacyGhostViewRight != null && legacyGhostViewRight.activeSelf)
                                 legacyGhostViewRight.SetActive(false);
+
                             GhostRig.gameObject.SetActive(true);
 
                             Color ghm = color;
@@ -1125,8 +1126,11 @@ namespace iiMenu.Menu
                     }
                     else
                     {
-                        GhostRig.gameObject.SetActive(false);
-                        GhostRig.transform.position = Vector3.one * float.MaxValue;
+                        if (GhostRig != null)
+                        {
+                            GhostRig.gameObject.SetActive(false);
+                            GhostRig.transform.position = Vector3.one * float.MaxValue;
+                        }
 
                         legacyGhostViewLeft.SetActive(false);
                         legacyGhostViewRight.SetActive(false);
@@ -5346,57 +5350,12 @@ namespace iiMenu.Menu
         /// current configuration.
         /// </summary>
         /// <param name="tmp">The canvas object to which the menu appearance settings will be applied.</param>
-        public static void FollowMenuSettings(TextMeshPro tmp)
+        public static void FollowMenuSettings(TMP_Text tmp, float? overlapTargetSpacing = null)
         {
             if (tmp == null)
                 return;
 
-            float targetSpacing = -8f + characterDistance;
-            if (redactText)
-                targetSpacing -= 3f;
-
-            if (!Mathf.Approximately(tmp.characterSpacing, targetSpacing))
-                tmp.characterSpacing = targetSpacing;
-
-            if (outlineText)
-            {
-                const float outlineWidth = 0.2f;
-
-                if (!Mathf.Approximately(tmp.outlineWidth, outlineWidth))
-                    tmp.outlineWidth = outlineWidth;
-
-                if (tmp.outlineColor != Color.black)
-                    tmp.outlineColor = Color.black;
-            }
-            else if (!Mathf.Approximately(tmp.outlineWidth, 0f))
-                tmp.outlineWidth = 0f;
-
-            FontStyles targetStyle = tmp.fontStyle;
-
-            if (underlineText)
-                targetStyle |= FontStyles.Underline;
-
-            if (smallCapsText)
-                targetStyle |= FontStyles.SmallCaps;
-
-            if (strikethroughText)
-                targetStyle |= FontStyles.Strikethrough;
-
-            if (tmp.fontStyle != targetStyle)
-                tmp.fontStyle = targetStyle;
-        }
-
-        /// <summary>
-        /// Applies menu appearance settings to the specified canvas object, such as outlining, based on
-        /// current configuration.
-        /// </summary>
-        /// <param name="tmp">The canvas object to which the menu appearance settings will be applied.</param>
-        public static void FollowMenuSettings(TextMeshProUGUI tmp)
-        {
-            if (tmp == null)
-                return;
-
-            float targetSpacing = -8f + characterDistance;
+            float targetSpacing = overlapTargetSpacing ?? (-8f + characterDistance);
             if (redactText)
                 targetSpacing -= 3f;
 
@@ -6476,6 +6435,13 @@ jgs \_   _/ |Oo\
                     for (int i = 0; i < Buttons.buttons.Length; i++)
                     {
                         var buttonList = Buttons.buttons[i];
+                        var category = Buttons.categoryNames[i];
+
+                        bool skipSettings = hideSettings && category.Contains("Settings");
+                        bool skipMacros = hideMacros && category.Contains("Macro");
+
+                        if (skipSettings || skipMacros)
+                            continue;
 
                         foreach (var v in buttonList)
                         {
