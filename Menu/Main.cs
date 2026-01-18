@@ -60,7 +60,7 @@ using Valve.VR;
 using static iiMenu.Utilities.AssetUtilities;
 using static iiMenu.Utilities.FileUtilities;
 using static iiMenu.Utilities.RandomUtilities;
-using Button = iiMenu.Classes.Menu.Button;
+using ButtonCollider = iiMenu.Classes.Menu.ButtonCollider;
 using CommonUsages = UnityEngine.XR.CommonUsages;
 using Console = iiMenu.Classes.Menu.Console;
 using JoinType = GorillaNetworking.JoinType;
@@ -340,6 +340,15 @@ namespace iiMenu.Menu
 
                 if (oneHand)
                     buttonCondition = rightHand ? leftInputs[menuButtonIndex] : rightInputs[menuButtonIndex];
+
+                if (toggleButton)
+                {
+                    if (buttonCondition && !toggleButtonHeld)
+                        toggleButtonActive = !toggleButtonActive;
+
+                    toggleButtonHeld = buttonCondition;
+                    buttonCondition = toggleButtonActive;
+                }
 
                 if (bothHands)
                 {
@@ -1790,7 +1799,7 @@ namespace iiMenu.Menu
                     buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.399f, 0.28f - offset) : new Vector3(0.56f, 0.599f, 0.28f - offset);
                 }
 
-                Button Button = buttonObject.AddComponent<Button>();
+                ButtonCollider Button = buttonObject.AddComponent<ButtonCollider>();
                 Button.relatedText = method.buttonText;
 
                 if (incrementalButtons)
@@ -1849,16 +1858,10 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<TextMeshPro>();
 
-            buttonText.font = activeFont;
-            buttonText.text = method.buttonText;
-
-            if (method.overlapText != null)
-                buttonText.text = method.overlapText;
+            string targetButtonText = method.overlapText ?? method.buttonText;
 
             if (method.detected)
-            {
-                buttonText.text = $"<color=red>{buttonText.text}</color>";
-            }
+                targetButtonText = $"<color=red>{targetButtonText}</color>";
 
             if (adaptiveButtons)
             {
@@ -1873,7 +1876,7 @@ namespace iiMenu.Menu
                             };
 
                             foreach (var replacement in replacements)
-                                buttonText.text = buttonText.text.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
+                                targetButtonText = targetButtonText.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
 
                             break;
                         }
@@ -1885,7 +1888,7 @@ namespace iiMenu.Menu
                             };
 
                             foreach (var replacement in replacements)
-                                buttonText.text = buttonText.text.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
+                                targetButtonText = targetButtonText.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
 
                             break;
                         }
@@ -1902,7 +1905,7 @@ namespace iiMenu.Menu
                             };
 
                             foreach (var replacement in replacements)
-                                buttonText.text = buttonText.text.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
+                                targetButtonText = targetButtonText.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
 
                             break;
                         }
@@ -1914,7 +1917,7 @@ namespace iiMenu.Menu
                             };
 
                             foreach (var replacement in replacements)
-                                buttonText.text = buttonText.text.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
+                                targetButtonText = targetButtonText.Replace($"<color=green>{replacement.Key.ToUpper()}</color>", $"<color=green>{replacement.Value.ToUpper()}</color>");
 
                             break;
                         }
@@ -1923,26 +1926,30 @@ namespace iiMenu.Menu
             
             if (method.rebindKey != null)
             {
-                if (buttonText.text.Contains("</color><color=grey>]</color>"))
-                    buttonText.text = buttonText.text.Split("<color=grey>[</color><color=green>")[0] + "<color=grey>[</color><color=green>" + method.rebindKey + "</color><color=grey>]</color>";
+                if (targetButtonText.Contains("</color><color=grey>]</color>"))
+                    targetButtonText = targetButtonText.Split("<color=grey>[</color><color=green>")[0] + "<color=grey>[</color><color=green>" + method.rebindKey + "</color><color=grey>]</color>";
             }
             
             if (method.customBind != null)
             {
-                if (buttonText.text.Contains("</color><color=grey>]</color>"))
-                    buttonText.text = buttonText.text.Replace("</color><color=grey>]</color>", $"/{method.customBind}</color><color=grey>]</color>");
+                if (targetButtonText.Contains("</color><color=grey>]</color>"))
+                    targetButtonText = targetButtonText.Replace("</color><color=grey>]</color>", $"/{method.customBind}</color><color=grey>]</color>");
                 else
-                    buttonText.text += $" <color=grey>[</color><color=green>{method.customBind}</color><color=grey>]</color>";
+                    targetButtonText += $" <color=grey>[</color><color=green>{method.customBind}</color><color=grey>]</color>";
             }
 
             if (inputTextColor != "green")
-                buttonText.text = buttonText.text.Replace(" <color=grey>[</color><color=green>", $" <color=grey>[</color><color={inputTextColor}>");
+                targetButtonText = targetButtonText.Replace(" <color=grey>[</color><color=green>", $" <color=grey>[</color><color={inputTextColor}>");
 
-            buttonText.text = FollowMenuSettings(buttonText.text);
+            targetButtonText = FollowMenuSettings(targetButtonText);
+
             buttonText.spriteAsset = ButtonSpriteSheet;
 
             if (favorites.Contains(method.buttonText))
                 buttonText.text = $"    {buttonText.text}    <sprite name=\"Favorite\">";
+
+            buttonText.font = activeFont;
+            buttonText.SafeSetText(targetButtonText);
 
             buttonText.richText = true;
             buttonText.fontSize = 1;
@@ -1950,7 +1957,7 @@ namespace iiMenu.Menu
             if (joystickMenu && buttonIndex == joystickButtonSelected && themeType == 30)
                 buttonText.color = Color.red;
             else
-                buttonText.AddComponent<TextColorChanger>().colors = textColors[method.enabled ? 2 : 1];
+                buttonText.AddComponent<UIColorChanger>().colors = textColors[method.enabled ? 2 : 1];
 
             buttonText.alignment = checkMode ? TextAlignmentOptions.Left : TextAlignmentOptions.Center;
             buttonText.fontStyle = activeFontStyle;
@@ -1982,7 +1989,7 @@ namespace iiMenu.Menu
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
             buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, -0.450f, -0.58f) : new Vector3(0.56f, -0.7f, -0.58f);
 
-            buttonObject.AddComponent<Button>().relatedText = "Search";
+            buttonObject.AddComponent<ButtonCollider>().relatedText = "Search";
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
             colorChanger.colors = buttonColors[isSearching ^ !swapButtonColors ? 0 : 1];
@@ -2014,7 +2021,7 @@ namespace iiMenu.Menu
 
             searchImage.material = searchMat;
             searchImage.material.SetTexture("_MainTex", searchIcon);
-            searchImage.AddComponent<ImageColorChanger>().colors = textColors[isSearching ? 2 : 1];
+            searchImage.AddComponent<UIColorChanger>().colors = textColors[isSearching ? 2 : 1];
 
             RectTransform imageTransform = searchImage.GetComponent<RectTransform>();
             imageTransform.localPosition = Vector3.zero;
@@ -2130,7 +2137,7 @@ namespace iiMenu.Menu
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
             buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
 
-            buttonObject.AddComponent<Button>().relatedText = "Info Screen";
+            buttonObject.AddComponent<ButtonCollider>().relatedText = "Info Screen";
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
             colorChanger.colors = buttonColors[infoScreenEnabled ^ swapButtonColors ? 0 : 1];
@@ -2152,7 +2159,7 @@ namespace iiMenu.Menu
 
             debugImage.material = debugMat;
             debugImage.material.SetTexture("_MainTex", debugIcon);
-            debugImage.AddComponent<ImageColorChanger>().colors = textColors[1];
+            debugImage.AddComponent<UIColorChanger>().colors = textColors[1];
 
             RectTransform imageTransform = debugImage.GetComponent<RectTransform>();
             imageTransform.localPosition = Vector3.zero;
@@ -2178,7 +2185,7 @@ namespace iiMenu.Menu
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
             buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
 
-            buttonObject.AddComponent<Button>().relatedText = "Donate Button";
+            buttonObject.AddComponent<ButtonCollider>().relatedText = "Donate Button";
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
             colorChanger.colors = buttonColors[swapButtonColors ? 1 : 0];
@@ -2200,7 +2207,7 @@ namespace iiMenu.Menu
 
             donateImage.material = donateMat;
             donateImage.material.SetTexture("_MainTex", donateIcon);
-            donateImage.AddComponent<ImageColorChanger>().colors = textColors[1];
+            donateImage.AddComponent<UIColorChanger>().colors = textColors[1];
 
             RectTransform imageTransform = donateImage.GetComponent<RectTransform>();
             imageTransform.localPosition = Vector3.zero;
@@ -2226,7 +2233,7 @@ namespace iiMenu.Menu
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
             buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
 
-            buttonObject.AddComponent<Button>().relatedText = "Update Button";
+            buttonObject.AddComponent<ButtonCollider>().relatedText = "Update Button";
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
             colorChanger.colors = buttonColors[swapButtonColors ? 1 : 0];
@@ -2248,7 +2255,7 @@ namespace iiMenu.Menu
 
             updateImage.material = updateMat;
             updateImage.material.SetTexture("_MainTex", updateIcon);
-            updateImage.AddComponent<ImageColorChanger>().colors = textColors[1];
+            updateImage.AddComponent<UIColorChanger>().colors = textColors[1];
 
             RectTransform imageTransform = updateImage.GetComponent<RectTransform>();
             imageTransform.localPosition = Vector3.zero;
@@ -2277,7 +2284,7 @@ namespace iiMenu.Menu
             if (offcenteredPosition)
                 buttonObject.transform.localPosition += new Vector3(0f, 0.16f, 0f);
 
-            buttonObject.AddComponent<Button>().relatedText = "Global Return";
+            buttonObject.AddComponent<ButtonCollider>().relatedText = "Global Return";
 
             if (lastClickedName != "Global Return")
             {
@@ -2305,7 +2312,7 @@ namespace iiMenu.Menu
 
             returnImage.material = returnMat;
             returnImage.material.SetTexture("_MainTex", returnIcon);
-            returnImage.AddComponent<ImageColorChanger>().colors = textColors[1];
+            returnImage.AddComponent<UIColorChanger>().colors = textColors[1];
 
             RectTransform imageTransform = returnImage.GetComponent<RectTransform>();
             imageTransform.localPosition = Vector3.zero;
@@ -2336,7 +2343,7 @@ namespace iiMenu.Menu
                 buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, ButtonDistance * 0.8f);
                 buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.399f, 0.28f - offset) : new Vector3(0.56f, 0.599f, 0.28f - offset);
 
-                Button button = buttonObject.AddComponent<Button>();
+                ButtonCollider button = buttonObject.AddComponent<ButtonCollider>();
                 button.relatedText = method.buttonText;
                 button.incremental = true;
                 button.positive = increment;
@@ -2372,7 +2379,7 @@ namespace iiMenu.Menu
             buttonText.text = increment ? "+" : "-";
             buttonText.richText = true;
             buttonText.fontSize = 1;
-            buttonText.AddComponent<TextColorChanger>().colors = textColors[1];
+            buttonText.AddComponent<UIColorChanger>().colors = textColors[1];
 
             buttonText.alignment = TextAlignmentOptions.Center;
             buttonText.fontStyle = activeFontStyle;
@@ -2410,6 +2417,18 @@ namespace iiMenu.Menu
 
         public static GameObject CreateMenu()
         {
+            if (clickGUI)
+            {
+                menu = LoadObject<GameObject>("ClickGUI");
+                menu.transform.localScale *= (menuScale * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f));
+
+                Settings.InitializeClickGUI();
+
+                RecenterMenu();
+
+                return menu;
+            }
+
             menu = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
             Destroy(menu.GetComponent<BoxCollider>());
@@ -2643,7 +2662,7 @@ namespace iiMenu.Menu
                 }
 
                 title.fontSize = 1;
-                title.AddComponent<TextColorChanger>().colors = textColors[0];
+                title.AddComponent<UIColorChanger>().colors = textColors[0];
 
                 title.richText = true;
                 title.fontStyle = activeFontStyle;
@@ -2677,7 +2696,7 @@ namespace iiMenu.Menu
                 buildLabel.text = FollowMenuSettings(buildLabel.text);
 
                 buildLabel.fontSize = 1;
-                buildLabel.AddComponent<TextColorChanger>().colors = textColors[0];
+                buildLabel.AddComponent<UIColorChanger>().colors = textColors[0];
                 buildLabel.richText = true;
                 buildLabel.fontStyle = activeFontStyle;
                 buildLabel.alignment = TextAlignmentOptions.Right;
@@ -2719,7 +2738,7 @@ namespace iiMenu.Menu
                     imageTransform.localRotation = Quaternion.Euler(new Vector3(0f, 90f, 90f - (rockWatermark ? (Mathf.Sin(Time.time * 2f) * 10f) : 0f)));
 
                     if (customWatermark == null)
-                        watermarkImage.AddComponent<ImageColorChanger>().colors = textColors[0];
+                        watermarkImage.AddComponent<UIColorChanger>().colors = textColors[0];
                     else
                         watermarkImage.material.color = Color.white;
                 }
@@ -2742,7 +2761,7 @@ namespace iiMenu.Menu
 
                 fps.text = FollowMenuSettings(textToSet, false);
 
-                fps.AddComponent<TextColorChanger>().colors = textColors[0];
+                fps.AddComponent<UIColorChanger>().colors = textColors[0];
                 fpsCount = fps;
                 fps.fontSize = 1;
                 fps.richText = true;
@@ -2844,7 +2863,7 @@ namespace iiMenu.Menu
                 if (joystickMenu && joystickButtonSelected == 0 && themeType == 30)
                     keyboardInputObject.color = Color.red;
                 else
-                    keyboardInputObject.AddComponent<TextColorChanger>().colors = textColors[1];
+                    keyboardInputObject.AddComponent<UIColorChanger>().colors = textColors[1];
 
                 keyboardInputObject.alignment = TextAlignmentOptions.Center;
                 keyboardInputObject.fontStyle = activeFontStyle;
@@ -3033,10 +3052,28 @@ namespace iiMenu.Menu
             return menu;
         }
 
+        private static Vector3? recenterPosition;
+        private static Quaternion? recenterRotation;
         public static void RecenterMenu()
         {
             bool isKeyboardCondition = UnityInput.Current.GetKey(KeyCode.Q) || (inTextInput && isKeyboardPc);
-            if (joystickMenu)
+            if (clickGUI)
+            {
+                if (recenterPosition == null || Vector3.Distance(recenterPosition.Value, GorillaTagger.Instance.bodyCollider.transform.TransformPoint(new Vector3(0f, 0f, 1.5f))) > 1f)
+                {
+                    menu.transform.position = GorillaTagger.Instance.bodyCollider.transform.TransformPoint(new Vector3(0f, 0f, 1.5f));
+                    menu.transform.position = new Vector3(menu.transform.position.x, GorillaTagger.Instance.headCollider.transform.position.y + 0.15f, menu.transform.position.z);
+                    menu.transform.LookAt(GorillaTagger.Instance.bodyCollider.transform);
+                    menu.transform.rotation = Quaternion.Euler(0f, menu.transform.eulerAngles.y + 180f, 0f);
+
+                    recenterPosition = menu.transform.position;
+                    recenterRotation = menu.transform.rotation;
+                }
+
+                menu.transform.position = recenterPosition.Value;
+                menu.transform.rotation = recenterRotation.Value;
+            }
+            else if (joystickMenu)
             {
                 menu.transform.position = GorillaTagger.Instance.headCollider.transform.TransformPoint(joystickMenuPositions[joystickMenuPosition]);
                 menu.transform.LookAt(GorillaTagger.Instance.headCollider.transform);
@@ -3108,18 +3145,17 @@ namespace iiMenu.Menu
                 {
                     menu.transform.localPosition = Vector3.zero;
                     menu.transform.localRotation = Quaternion.identity;
-                    if (rightHand)
-                        menu.transform.position = GorillaTagger.Instance.rightHandTransform.position + new Vector3(0f, 0.3f, 0f);
-                    else
-                        menu.transform.position = GorillaTagger.Instance.leftHandTransform.position + new Vector3(0f, 0.3f, 0f);
-                    
+                    menu.transform.position = rightHand
+                        ? GorillaTagger.Instance.rightHandTransform.position + new Vector3(0f, 0.3f, 0f)
+                        : GorillaTagger.Instance.leftHandTransform.position + new Vector3(0f, 0.3f, 0f);
+
                     menu.transform.LookAt(GorillaTagger.Instance.headCollider.transform.position);
                     Vector3 rotModify = menu.transform.rotation.eulerAngles;
                     rotModify += new Vector3(-90f, 0f, -90f);
                     menu.transform.rotation = Quaternion.Euler(rotModify);
                 }
             }
-            if (inTextInput && !isKeyboardPc)
+            if (inTextInput && !isKeyboardPc && !clickGUI)
             {
                 menu.transform.position = menuSpawnPosition.transform.position;
                 menu.transform.rotation = menuSpawnPosition.transform.rotation;
@@ -3186,7 +3222,7 @@ namespace iiMenu.Menu
                             bool worked = Physics.Raycast(ray, out RaycastHit hit, 512f, NoInvisLayerMask());
                             if (worked)
                             {
-                                Button collide = hit.transform.gameObject.GetComponent<Button>();
+                                ButtonCollider collide = hit.transform.gameObject.GetComponent<ButtonCollider>();
                                 if (collide != null)
                                 {
                                     collide.OnTriggerEnter(buttonCollider);
@@ -3300,6 +3336,9 @@ namespace iiMenu.Menu
 
             smoothTargetPosition = Vector3.zero;
             smoothTargetRotation = Quaternion.identity;
+
+            recenterPosition = null;
+
             if (!dynamicAnimations || explodeMenu)
             {
                 if (!dropOnRemove)
@@ -3496,7 +3535,7 @@ namespace iiMenu.Menu
 
             promptText.fontSize = 1;
             promptText.lineSpacing = 0.8f;
-            promptText.AddComponent<TextColorChanger>().colors = textColors[0];
+            promptText.AddComponent<UIColorChanger>().colors = textColors[0];
 
             promptText.richText = true;
             promptText.fontStyle = activeFontStyle;
@@ -3591,7 +3630,7 @@ namespace iiMenu.Menu
                 button.transform.localScale = new Vector3(0.09f, CurrentPrompt.DeclineText == null ? 0.9f : 0.4375f, 0.08f);
                 button.transform.localPosition = new Vector3(0.56f, CurrentPrompt.DeclineText == null ? 0f : 0.2375f, -0.43f);
 
-                button.AddComponent<Button>().relatedText = "Accept Prompt";
+                button.AddComponent<ButtonCollider>().relatedText = "Accept Prompt";
 
                 if (lastClickedName != "Accept Prompt")
                 {
@@ -3620,7 +3659,7 @@ namespace iiMenu.Menu
                 text.enableAutoSizing = true;
                 text.fontSizeMin = 0;
 
-                text.AddComponent<TextColorChanger>().colors = textColors[1];
+                text.AddComponent<UIColorChanger>().colors = textColors[1];
 
                 RectTransform textRect = text.GetComponent<RectTransform>();
                 textRect.sizeDelta = new Vector2(0.2f, 0.03f);
@@ -3651,7 +3690,7 @@ namespace iiMenu.Menu
                 button.transform.localScale = new Vector3(0.09f, 0.4375f, 0.08f);
                 button.transform.localPosition = new Vector3(0.56f, -0.2375f, -0.43f);
 
-                button.AddComponent<Button>().relatedText = "Decline Prompt";
+                button.AddComponent<ButtonCollider>().relatedText = "Decline Prompt";
 
                 if (lastClickedName != "Decline Prompt")
                 {
@@ -3680,7 +3719,7 @@ namespace iiMenu.Menu
                 text.enableAutoSizing = true;
                 text.fontSizeMin = 0;
 
-                text.AddComponent<TextColorChanger>().colors = textColors[1];
+                text.AddComponent<UIColorChanger>().colors = textColors[1];
 
                 RectTransform textRect = text.GetComponent<RectTransform>();
                 textRect.sizeDelta = new Vector2(0.2f, 0.03f);
@@ -3711,10 +3750,7 @@ namespace iiMenu.Menu
                 return null;
 
             var match = Regex.Match(input, @"<(?<url>https?://[^>]+)>");
-            if (match.Success)
-                return match.Groups["url"].Value;
-
-            return null;
+            return match.Success ? match.Groups["url"].Value : null;
         }
 
         private static GameObject AdvancedAddButton(string buttonName, Vector3 scale, Vector3 position, Vector3 textPosition, ExtGradient color, Vector2? textSize, int arrowIndex)
@@ -3730,7 +3766,7 @@ namespace iiMenu.Menu
             button.transform.localScale = scale;
             button.transform.localPosition = position;
 
-            button.AddComponent<Button>().relatedText = buttonName;
+            button.AddComponent<ButtonCollider>().relatedText = buttonName;
 
             if (lastClickedName != buttonName)
             {
@@ -3749,7 +3785,7 @@ namespace iiMenu.Menu
             text.fontSizeMin = 0;
             text.spriteAsset = ButtonSpriteSheet;
 
-            text.AddComponent<TextColorChanger>().colors = textColors[1];
+            text.AddComponent<UIColorChanger>().colors = textColors[1];
 
             RectTransform textRect = text.GetComponent<RectTransform>();
             textRect.sizeDelta = textSize ?? new Vector2(0.2f, 0.03f);
@@ -4037,10 +4073,7 @@ namespace iiMenu.Menu
         {
             get 
             {
-                if (prompts.Count > 0)
-                    return prompts[0];
-                else
-                    return null;
+                return prompts.Count > 0 ? prompts[0] : null;
             }
         }
 
@@ -4557,16 +4590,13 @@ namespace iiMenu.Menu
         /// <returns>Holding Button</returns>
         public static bool GetGunInput(bool isShooting)
         {
-            if (GiveGunTarget != null)
-            {
-                if (isShooting)
-                    return TriggerlessGuns || (SwapGunHand ? GiveGunTarget.leftIndex.calcT > 0.5f : GiveGunTarget.rightIndex.calcT > 0.5f);
-                return GriplessGuns || (SwapGunHand ? GiveGunTarget.leftMiddle.calcT > 0.5f : GiveGunTarget.rightMiddle.calcT > 0.5f);
-            }
-
-            if (isShooting)
-                return TriggerlessGuns || (SwapGunHand ? leftTrigger > 0.5f : rightTrigger > 0.5f) || Mouse.current.leftButton.isPressed;
-            return GriplessGuns || (SwapGunHand ? leftGrab : rightGrab) || (HardGunLocks && gunLocked && !rightSecondary) || Mouse.current.rightButton.isPressed;
+            return GiveGunTarget != null
+                ? isShooting
+                    ? TriggerlessGuns || (SwapGunHand ? GiveGunTarget.leftIndex.calcT > 0.5f : GiveGunTarget.rightIndex.calcT > 0.5f)
+                    : GriplessGuns || (SwapGunHand ? GiveGunTarget.leftMiddle.calcT > 0.5f : GiveGunTarget.rightMiddle.calcT > 0.5f)
+                : isShooting
+                ? TriggerlessGuns || (SwapGunHand ? leftTrigger > 0.5f : rightTrigger > 0.5f) || Mouse.current.leftButton.isPressed
+                : GriplessGuns || (SwapGunHand ? leftGrab : rightGrab) || (HardGunLocks && gunLocked && !rightSecondary) || Mouse.current.rightButton.isPressed;
         }
 
         /// <summary>
@@ -4936,7 +4966,7 @@ namespace iiMenu.Menu
             GameObject menuObject = menu;
 
             float elapsedTime = 0f;
-            Vector3 target = scaleWithPlayer ? new Vector3(0.1f, 0.3f, 0.3825f) * (menuScale * GTPlayer.Instance.scale) : new Vector3(0.1f, 0.3f, 0.3825f) * menuScale;
+            Vector3 target = menu.transform.localScale;
             while (elapsedTime < (slowDynamicAnimations ? 0.1f : 0.05f))
             {
                 if (menuObject == null)
@@ -5032,9 +5062,7 @@ namespace iiMenu.Menu
 
             projectileName += "(Clone)";
 
-            if (snowballDict != null && snowballDict.TryGetValue(projectileName, out var projectile))
-                return projectile;
-            return null;
+            return snowballDict != null && snowballDict.TryGetValue(projectileName, out var projectile) ? projectile : null;
         }
 
         public static readonly Dictionary<Type, object[]> typePool = new Dictionary<Type, object[]>();
@@ -5433,9 +5461,7 @@ namespace iiMenu.Menu
 
         public static Color HexToColor(string hex)
         {
-            if (!ColorUtility.TryParseHtmlString(hex, out var color))
-                return Color.black;
-            return color;
+            return !ColorUtility.TryParseHtmlString(hex, out var color) ? Color.black : color;
         }
 
         public static string NoRichtextTags(string input, string replace = "")
@@ -5949,10 +5975,7 @@ namespace iiMenu.Menu
                         }
 
                         if (target.label)
-                        {
-                            ReloadMenu();
                             return;
-                        }
 
                         switch (fromMenu)
                         {
@@ -6133,7 +6156,9 @@ namespace iiMenu.Menu
                     break;
                 }
             }
-            ReloadMenu();
+
+            if (!clickGUI)
+                ReloadMenu();
         }
 
         /// <summary>
@@ -6223,7 +6248,9 @@ namespace iiMenu.Menu
                             }
                 }
             }
-            ReloadMenu();
+
+            if (!clickGUI)
+                ReloadMenu();
         }
 
         public static IEnumerator DelayLoadPreferences()
@@ -6411,6 +6438,7 @@ jgs \_   _/ |Oo\
         public static bool isMouseDown;
         public static bool openedwithright;
         public static bool oneHand;
+        public static bool clickGUI;
 
         public static int _pageSize = 8;
         public static int PageSize
@@ -6511,6 +6539,8 @@ jgs \_   _/ |Oo\
 
         public static int LastPage => (DisplayedItemCount + PageSize - 1) / PageSize - 1;
 
+        public static event Action OnCategoryChanged;
+
         public static int _currentCategoryIndex;
         public static int currentCategoryIndex
         {
@@ -6520,6 +6550,8 @@ jgs \_   _/ |Oo\
                 _currentCategoryIndex = value;
                 pageNumber = 0;
                 pageOffset = 0;
+
+                OnCategoryChanged?.Invoke();
             }
         }
 
@@ -6546,6 +6578,9 @@ jgs \_   _/ |Oo\
         public static int buttonClickVolume = 4;
         public static int buttonOffset = 2;
         public static int menuButtonIndex = 1;
+        public static bool toggleButton;
+        public static bool toggleButtonHeld;
+        public static bool toggleButtonActive;
         public static int characterDistance;
 
         public static bool doButtonsVibrate = true;

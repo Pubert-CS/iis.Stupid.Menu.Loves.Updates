@@ -344,10 +344,9 @@ namespace iiMenu.Managers
 
         public static NetPlayer[] GetAllFriendsInRoom()
         {
-            if (!NetworkSystem.Instance.InRoom)
-                return Array.Empty<NetPlayer>();
-
-            return NetworkSystem.Instance.PlayerListOthers
+            return !NetworkSystem.Instance.InRoom
+                ? Array.Empty<NetPlayer>()
+                : NetworkSystem.Instance.PlayerListOthers
                 .Where(player => instance.Friends.friends.Values
                     .Any(friend => player.UserId == friend.currentUserID))
                 .ToArray();
@@ -440,7 +439,7 @@ namespace iiMenu.Managers
                                     break;
                                 }
 
-                                GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                                GameObject head = GameObject.CreatePrimitive(PrimitiveType.Cube);
                                 Destroy(head.GetComponent<Collider>());
                                 head.transform.localScale = Vector3.one * 0.3f;
                                 head.GetComponent<Renderer>().material.color = SenderRig.playerColor;
@@ -451,7 +450,7 @@ namespace iiMenu.Managers
                                 nametag.transform.localPosition = new Vector3(0f, 0.8f, 0f);
 
                                 TextMeshPro nametagText = nametag.AddComponent<TextMeshPro>();
-                                nametagText.fontSize = 2.4f;
+                                nametagText.fontSize = 24f;
                                 nametagText.font = activeFont;
                                 nametagText.fontStyle = activeFontStyle;
                                 nametagText.alignment = TextAlignmentOptions.Center;
@@ -460,12 +459,12 @@ namespace iiMenu.Managers
                                 nametagText.color = SenderRig.playerColor;
                                 nametagText.fontStyle = activeFontStyle;
 
-                                GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                                GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Cube);
                                 Destroy(leftHand.GetComponent<Collider>());
                                 leftHand.transform.localScale = Vector3.one * 0.1f;
                                 leftHand.GetComponent<Renderer>().material.color = SenderRig.playerColor;
 
-                                GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                                GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Cube);
                                 Destroy(rightHand.GetComponent<Collider>());
                                 rightHand.transform.localScale = Vector3.one * 0.1f;
                                 rightHand.GetComponent<Renderer>().material.color = SenderRig.playerColor;
