@@ -28,6 +28,7 @@ using iiMenu.Managers;
 using iiMenu.Mods;
 using iiMenu.Patches.Menu;
 using iiMenu.Patches.Safety;
+using iiMenu.Utilities;
 using Photon.Pun;
 using System;
 using System.Collections.Generic;
@@ -112,7 +113,6 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Bark Menu", enableMethod =() => barkMenu = true, disableMethod =() => barkMenu = false, toolTip = "Allows you to spawn the menu similar to bark by banging on your chest."},
                 new ButtonInfo { buttonText = "Wrist Menu", enableMethod =() => wristMenu = true, disableMethod =() => wristMenu = false, toolTip = "Turns the menu into a weird wrist watch, click your hand to open it."},
                 new ButtonInfo { buttonText = "Watch Menu", enableMethod = Settings.WatchMenuOn, disableMethod = Settings.WatchMenuOff, toolTip = "Turns the menu into a watch, click your joystick to toggle, and move your joystick to select a mod."},
-                new ButtonInfo { buttonText = "Console Menu", method = Fun.ConsoleFrame, disableMethod = System.Console.Clear, toolTip = "Puts the menu in your debug console. Navigate with the arrow keys."},
                 new ButtonInfo { buttonText = "Shiny Menu", enableMethod =() => shinyMenu = true, disableMethod =() => shinyMenu = false, toolTip = "Makes the menu's textures use the old shader."},
                 new ButtonInfo { buttonText = "Transparent Menu", enableMethod =() => transparentMenu = true, disableMethod =() => transparentMenu = false, toolTip = "Makes the menu transparent."},
                 new ButtonInfo { buttonText = "Crystallize Menu", enableMethod =() => { crystallizeMenu = true; CustomBoardManager.BoardMaterial = CrystalMaterial; }, disableMethod =() => { crystallizeMenu = false ; CustomBoardManager.BoardMaterial = null; }, toolTip = "Turns the menu into crystals."},
@@ -353,7 +353,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "High Quality Portals", toolTip = "Makes the view through the portals higher quality." }
             },
 
-            new[] { // Projectiles Settings [5]
+            new[] { // Projectile Settings [5]
                 new ButtonInfo { buttonText = "Exit Projectile Settings", method =() => currentCategoryName = "Settings", isTogglable = false, toolTip = "Returns you back to the settings menu."},
 
                 new ButtonInfo { buttonText = "Change Projectile", overlapText = "Change Projectile <color=grey>[</color><color=green>Snowball</color><color=grey>]</color>", method =() => Projectiles.ChangeProjectile(), enableMethod =() => Projectiles.ChangeProjectile(), disableMethod =() => Projectiles.ChangeProjectile(false), incremental = true, isTogglable = false, toolTip = "Changes the projectile of the projectile mods." },
@@ -549,6 +549,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Anti Moderator", method = Safety.AntiModerator, toolTip = "When someone with the stick joins, you get disconnected and their player ID and room code gets saved to a file."},
                 new ButtonInfo { buttonText = "Anti Content Creator", method = Safety.AntiContentCreator, toolTip = "When a content creator joins, you get disconnected and their player ID and room code gets saved to a file."},
                 new ButtonInfo { buttonText = "Cosmetic Notifications", method = Safety.CosmeticNotifications, toolTip = "Sends you a notification if there is a Finger Painter, Illustrator, Administrator, Stick, Forest Guide, or Another Axiom Creator in your room."},
+                new ButtonInfo { buttonText = "Steam Detector", method = Important.SteamDetector, toolTip = "Detects when a player in your room is on Steam."},
 
                 new ButtonInfo { buttonText = "Bypass Automod", method = Safety.BypassAutomod, toolTip = "Attempts to bypass automod muting yourself and others."},
                 new ButtonInfo { buttonText = "Bypass Mod Checkers", enableMethod =() => PropertiesPatches.enabled = true, method = Safety.BypassModCheckers, disableMethod =() => PropertiesPatches.enabled = false, toolTip = "Tells players using mod checkers that you have no mods."},
@@ -740,10 +741,11 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Freeze Rig Limbs", method = Movement.FreezeRigLimbs, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Makes your hands and head freeze on your rig, but not your body."},
                 new ButtonInfo { buttonText = "Freeze Rig Body", method = Movement.FreezeRigBody, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Makes your body freeze on your rig, but not your hands and head."},
                 new ButtonInfo { buttonText = "Freeze Rig", method = Movement.FreezeRig, disableMethod =() => { VRRig.LocalRig.enabled = true; Movement.startPosition = null; }, toolTip = "Makes your body freeze on your rig, but not your hands and head."},
-
+                
                 new ButtonInfo { buttonText = "Paralyze Rig", method = Movement.ParalyzeRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes your arms from your rig. Credits to Expansion for the idea."},
                 new ButtonInfo { buttonText = "Chicken Rig", method = Movement.ChickenRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Makes your rig look like a chicken."},
                 new ButtonInfo { buttonText = "Amputate Rig", method = Movement.AmputateRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes all of your limbs from your rig. Credits to Expansion for the idea."},
+                new ButtonInfo { buttonText = "Decapitate Rig", enableMethod =() => TorsoPatch.VRRigLateUpdate += Movement.DecapitateRigUpdate, disableMethod =() => TorsoPatch.VRRigLateUpdate -= Movement.DecapitateRigUpdate, toolTip = "Removes the head from your rig."},
 
                 new ButtonInfo { buttonText = "Spin Rig Body", method =() => Movement.SetBodyPatch(true), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Makes your body spin around, but not your head."},
                 new ButtonInfo { buttonText = "Spaz Rig Body", method =() => Movement.SetBodyPatch(true, 1), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Gives your body a seizure, randomizing its rotation."},
@@ -823,8 +825,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "No Tag Limit", method =() => GorillaTagger.Instance.maxTagDistance = float.MaxValue, disableMethod =() => GorillaTagger.Instance.maxTagDistance = 1.2f, toolTip = "Removes the distance check when tagging players."},
                 new ButtonInfo { buttonText = "Tag Lag Detector", method = Important.TagLagDetector, toolTip = "Detects when the master client is not currently allowing tag requests."},
-                new ButtonInfo { buttonText = "Steam Detector", method = Important.SteamDetector, toolTip = "Detects when a player in your room is on Steam."},
-
+                
                 new ButtonInfo { buttonText = "Fake Lag", method = Movement.FakeLag, disableMethod =() => { SerializePatch.OverrideSerialization = null; PlayerSerializePatch.delay = null; }, toolTip = "Forces your ping to be high."},
                 new ButtonInfo { buttonText = "Lag Range", method = Movement.LagRange, toolTip = "Dynamically changes how much your rig updates depending on how close you are to others."},
                 new ButtonInfo { buttonText = "Blink", method = Movement.Blink, disableMethod = Movement.DisableBlink, toolTip = "Stops your client from sending and receiving player update packets."},
@@ -1068,7 +1069,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Trigger Anti Report All", method = Fun.TriggerAntiReportAll, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Triggers everyone in the room's anti report if enabled."},
 
                 new ButtonInfo { buttonText = "Break Mod Checkers", enableMethod = Fun.BreakModCheckers, disableMethod = Safety.BypassModCheckers, toolTip = "Tells players using mod checkers that you have every mod possible."},
-                new ButtonInfo { buttonText = "Custom Mod Spoofer", enableMethod =() => PromptSingleText("Please enter what you would like to spoof your mods to (seperated by commas).", ()=> Fun.CustomModSpoofer(keyboardInput), "Done"), disableMethod = Safety.BypassModCheckers, toolTip = "Make mod checkers see only what you allow."},
+                new ButtonInfo { buttonText = "Custom Mod Spoofer", method = Fun.CustomModSpoofer, isTogglable = false, toolTip = "Make mod checkers see only what you allow."},
 
                 new ButtonInfo { buttonText = "Mute DJ Sets", method = Fun.MuteDJSets, disableMethod = Fun.UnmuteDJSets, toolTip = "Mutes every DJ set so you don't have to hear the worst music known to man."},
                 new ButtonInfo { buttonText = "Infinite Dreidel", method =() => DreidelPatch.enabled = true, disableMethod =() => DreidelPatch.enabled = false, toolTip = "Makes the dreidel cosmetic spin forever."},
@@ -1335,7 +1336,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Entity Fountain", method = Overpowered.EntityFountain, toolTip = "Spurts random entities out of your head like a fountain."},
 
                 new ButtonInfo { buttonText = "Ghost Reactor Text Gun", enableMethod =() => PromptText("What text would you like to show?", () => Overpowered.textToRender = keyboardInput.ToUpper(), null, "Done", "Cancel"), method = Overpowered.GhostReactorTextGun, toolTip = "Spawns entities in the shape of the text you desire in the ghost reactor."},
-
+                new ButtonInfo { buttonText = "Ghost Reactor Draw Gun", method = Overpowered.GhostReactorDrawGun, toolTip = "Allows you to draw with entities in ghost reactor."},
+                
                 new ButtonInfo { buttonText = "Destroy Entity Gun", method = Overpowered.DestroyEntityGun, toolTip = "Destroys any entity which your hand desires."},
 
                 new ButtonInfo { buttonText = "Infinite Jet Fuel", method =() => FuelPatch.enabled = true, disableMethod =() => FuelPatch.enabled = false, toolTip = "Gives the jet gadgets in Super Infection infinite fuel."},
@@ -1401,6 +1403,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Gadget Fountain", method =() => Overpowered.GadgetFountain(), toolTip = "Spurts random gadgets out of your head like a fountain."},
 
                 new ButtonInfo { buttonText = "Super Infection Text Gun", enableMethod =() => PromptText("What text would you like to show?", () => Overpowered.textToRender = keyboardInput.ToUpper(), null, "Done", "Cancel"), method = Overpowered.SuperInfectionTextGun, toolTip = "Spawns entities in the shape of the text you desire in the Super Infection gamemode."},
+                new ButtonInfo { buttonText = "Super Infection Draw Gun", method = Overpowered.SuperInfectionDrawGun, toolTip = "Allows you to draw with entities in Super Infection."},
 
                 new ButtonInfo { buttonText = "Destroy Gadget Gun", method = Overpowered.DestroyGadgetGun, toolTip = "Destroys any gadget which your hand desires."},
 
@@ -1715,23 +1718,32 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Snowball Rain <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballRain, toolTip = "Rains snowballs around you when holding <color=green>trigger</color>."},
                 new ButtonInfo { buttonText = "Snowball Hail <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballHail, toolTip = "Hails snowballs around you when holding <color=green>trigger</color>."},
+                
+                new ButtonInfo { buttonText = "Snowball Fountain <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballFountain, toolTip = "Fountains snowballs above you when holding <color=green>trigger</color>."},
+                new ButtonInfo { buttonText = "Snowball Positional Fountain <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballPositionalFountain, disableMethod = Overpowered.DisableSnowballPositionalFountain, toolTip = "Place a fountain <color=green>grip</color> and use it with <color=green>trigger</color>. It will fountain snowballs at wherever the fountain is."},
 
                 new ButtonInfo { buttonText = "Snowball Orbit <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballOrbit, toolTip = "Orbits snowballs around you when holding <color=green>trigger</color>."},
                 new ButtonInfo { buttonText = "Snowball Aura <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballAura, toolTip = "Randomly spawns snowballs around you when holding <color=green>trigger</color>."},
+                new ButtonInfo { buttonText = "Snowball Mushroom <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballMushroom, toolTip = "Spawns a mushroom cloud of snowballs on you when holding <color=green>trigger</color>."},
 
-                new ButtonInfo { buttonText = "Snowball Minigun", method = Overpowered.SnowballMinigun, toolTip = "Spawns snowballs towards wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Minigun <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballMinigun, toolTip = "Spawns snowballs towards wherever your hand desires."},
                 new ButtonInfo { buttonText = "Give Snowball Minigun", method = Overpowered.GiveSnowballMinigun, toolTip = "Gives whoever your hand desires a snowball minigun." },
 
-                new ButtonInfo { buttonText = "Snowball Shotgun", method = Overpowered.SnowballShotgun, toolTip = "Spawns snowballs around wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Shotgun <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballShotgun, toolTip = "Spawns snowballs around wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball Wall <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballWall, toolTip = "Spawns a wall of snowballs towards wherever your hand desires."},
+                new ButtonInfo { buttonText = "Snowball C4 <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballBomb, disableMethod = Overpowered.DisableBomb, toolTip = "Place a C4 with <color=green>grip</color> and detonate it with <color=green>A</color>. It will spawn snowballs at wherever the bomb is."},
 
                 new ButtonInfo { buttonText = "Snowball Boxing", method = Overpowered.SnowballBoxing, toolTip = "Gives everyone punch mod with the snowballs."},
                 new ButtonInfo { buttonText = "Snowball Dash <color=grey>[</color><color=green>A</color><color=grey>]</color>", method = Overpowered.SnowballDash, toolTip = "Allows other players to dash themself into the air with the snowballs."},
-
+                new ButtonInfo { buttonText = "Snowball High Jump", method =() => Overpowered.SnowballHighJump(), toolTip = "Allow everyone to jump higher."},
                 new ButtonInfo { buttonText = "Snowball Particle Gun", method = Overpowered.SnowballParticleGun, toolTip = "Spawns snowball particles wherever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball Impact Effect Gun", method = Overpowered.SnowballImpactEffectGun, toolTip = "Spawns snowball impact events on whoever your hand desires."},
 
                 new ButtonInfo { buttonText = "Snowball Punch Mod", method = Overpowered.SnowballPunchMod, toolTip = "Flings people when you punch them."},
-                new ButtonInfo { buttonText = "Snowball Kamehameha", enableMethod = Overpowered.Enable_Kamehameha, method = Overpowered.Kamehameha, disableMethod = Overpowered.Disable_Kamehameha, toolTip = "Spawns a flaming ball when holding down both triggers and grips.." },
+                new ButtonInfo { buttonText = "Snowball Kamehameha", enableMethod = Overpowered.Enable_Kamehameha, method = Overpowered.Kamehameha, disableMethod = Overpowered.Disable_Kamehameha, toolTip = "Spawns a flaming ball when holding down both triggers and grips." },
+
+                new ButtonInfo { buttonText = "Snowball Launch Gun", method = Overpowered.SnowballLaunchGun, toolTip = "Launches whoever your hand desires like a launch pad."},
+                new ButtonInfo { buttonText = "Snowball Fling Zone <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballFlingZone, disableMethod = Overpowered.DisableSnowballFlingZone, toolTip = "Spawn and move fling zones with your <color=green>right grip</color>. Press <color=green>trigger</color> to remove fling zones."},
 
                 new ButtonInfo { buttonText = "Snowball Fling Gun", method = Overpowered.SnowballFlingGun, toolTip = "Flings whoever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball Fling All <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.SnowballFlingAll, toolTip = "Flings everybody when holding <color=green>trigger</color>."},
@@ -1968,7 +1980,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Kick Master Client", method = Overpowered.KickMasterClient, disableMethod =() => Overpowered.OptimizeEvents = false, toolTip = "Kicks the master client from the room." },
 
-                new ButtonInfo { buttonText = "Ghost Reactor Kick Master Client", method = Overpowered.GhostReactorKickMasterClient, isTogglable = false, toolTip = "Kicks the master client in the Ghost Reactor map."},
+                new ButtonInfo { buttonText = "Ghost Reactor Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.GhostReactor.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the Ghost Reactor map."},
 
                 new ButtonInfo { buttonText = "Ghost Reactor Kick Gun", method = Overpowered.GhostReactorKickGun, toolTip = "Kicks whoever your hand desires in the Ghost Reactor map as long as they are master client."},
                 new ButtonInfo { buttonText = "Ghost Reactor Kick All", method = Overpowered.GhostReactorKickAll, isTogglable = false, toolTip = "Kicks everyone in the Ghost Reactor map."},
@@ -1977,7 +1989,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Ghost Reactor Crash Gun", method = Overpowered.GhostReactorCrashGun, toolTip = "Crashes whoever your hand desires in the ghost reactor."},
                 new ButtonInfo { buttonText = "Ghost Reactor Crash All", method = Overpowered.GhostReactorCrashAll, toolTip = "Crashes everyone in the ghost reactor."},
 
-                new ButtonInfo { buttonText = "Super Infection Kick Master Client", method = Overpowered.SuperInfectionKickMasterClient, isTogglable = false, toolTip = "Kicks the master client in the Super Infection gamemode."},
+                new ButtonInfo { buttonText = "Super Infection Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the Super Infection gamemode."},
 
                 new ButtonInfo { buttonText = "Super Infection Kick Gun", method = Overpowered.SuperInfectionKickGun, toolTip = "Kicks whoever your hand desires in the Super Infection gamemode as long as they are master client."},
                 new ButtonInfo { buttonText = "Super Infection Kick All", method = Overpowered.SuperInfectionKickAll, isTogglable = false, toolTip = "Kicks everyone in the Super Infection gamemode."},
@@ -1989,7 +2001,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Super Infection Break Audio Gun", method = Overpowered.SuperInfectionBreakAudioGun, toolTip = "Breaks the audio of whoever your hand desires in the Super Infection gamemode."},
                 new ButtonInfo { buttonText = "Super Infection Break Audio All", method = Overpowered.SuperInfectionBreakAudioAll, toolTip = "Breaks the audio of everyone in the Super Infection gamemode."},
 
-                new ButtonInfo { buttonText = "Virtual Stump Kick Master Client", method = Overpowered.VirtualStumpKickMasterClient, isTogglable = false, toolTip = "Kicks the master client in the virtual stump."},
+                new ButtonInfo { buttonText = "Virtual Stump Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the virtual stump."},
 
                 new ButtonInfo { buttonText = "Virtual Stump Kick Gun", method = Overpowered.VirtualStumpKickGun, toolTip = "Kicks whoever your hand desires in the virtual stump."},
                 new ButtonInfo { buttonText = "Virtual Stump Kick All", method = Overpowered.VirtualStumpKickAll, toolTip = "Kicks everyone in the virtual stump."},
@@ -2148,6 +2160,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Follow Menu Theme", toolTip = "Makes visual mods match the theme of the menu, rather than the color of the player."},
                 new ButtonInfo { buttonText = "Follow Player Colors", toolTip = "Makes the infection tracers appear their normal color instead of orange for tagged players."},
                 new ButtonInfo { buttonText = "Transparent Theme", overlapText = "Transparent Visuals", toolTip = "Makes visual mods transparent."},
+                new ButtonInfo { buttonText = "Nametag Chams", enableMethod =() => Visuals.nameTagChams = true, disableMethod =() => Visuals.nameTagChams = false, toolTip = "Make name tags"},
+                new ButtonInfo { buttonText = "Show Self Nametag", enableMethod =() => Visuals.selfNameTag = true, disableMethod =() => Visuals.selfNameTag = false, toolTip = "Makes visual mods transparent."},
                 new ButtonInfo { buttonText = "Hidden on Camera", overlapText = "Streamer Mode Visuals", toolTip = "Makes visual mods only render on VR."},
                 new ButtonInfo { buttonText = "Hidden Labels", overlapText = "Streamer Mode Labels", toolTip = "Makes label mods only render on VR."},
                 new ButtonInfo { buttonText = "Thin Tracers", toolTip = "Makes the tracers thinner."},
@@ -2347,7 +2361,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Kick to Public", enableMethod =() => Overpowered.kickToPublic = true, disableMethod =() => Overpowered.kickToPublic = false, toolTip = "Makes the kick mods send the user to a public lobby. This allows for chaining of commands." },
                 new ButtonInfo { buttonText = "Kick to Specific Room", enableMethod = Settings.KickToSpecificRoom, disableMethod =() => Overpowered.specificRoom = null, toolTip = "Makes the kick mods send the user to the specific room of your choice." },
                 new ButtonInfo { buttonText = "Rejoin on Kick", enableMethod =() => Overpowered.rejoinOnKick = true, disableMethod =() => Overpowered.rejoinOnKick = false, toolTip = "Makes room based kick mods join the room you kicked the target in once they have been kicked." },
-                new ButtonInfo { buttonText = "Fast Kick", enableMethod =() => Important.instantCreate = true, disableMethod =() => Important.instantCreate = false, toolTip = "Instantly creates a room instead of checking if one already exists." }
+                new ButtonInfo { buttonText = "Fast Kick", enableMethod =() => Important.instantCreate = true, disableMethod =() => Important.instantCreate = false, toolTip = "Instantly creates a room instead of checking if one already exists." },
+                new ButtonInfo { buttonText = "Kick Fix", enableMethod =() => JoinPatch.enabled = true, disableMethod =() => JoinPatch.enabled = false, toolTip = "Stops the super infection, virtual stump, and other kick mods from breaking." }
             },
 
             new[] { // Keybind Settings [32]
@@ -2592,6 +2607,16 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Switch to Modded Gamemode", enableMethod =() => Detected.moddedGamemode = true, disableMethod =() => Detected.moddedGamemode = false, toolTip = "Automatically sets the gamemode as modded when changed."},
                 new ButtonInfo { buttonText = "Isolate Others", toolTip = "Allows you to still be seen when isolating players."}
+            },
+
+            new[] // Achievements [45]
+            {
+                new ButtonInfo { buttonText = "Exit Achievements", method = () => currentCategoryName = "Main", isTogglable = false, toolTip = "Returns you back to the main page." }
+            },
+
+            new[] // Mod List [46]
+            {
+                new ButtonInfo { buttonText = "Exit Mod List", method = () => currentCategoryName = "Main", isTogglable = false, toolTip = "Returns you back to the main page." }
             }
         };
 
@@ -2641,6 +2666,8 @@ namespace iiMenu.Menu
             "Macros",
             "Detected Mods",
             "Detected Settings",
+            "Achievements",
+            "Mod List"
         };
 
         private static readonly Dictionary<string, (int Category, int Index)> cacheGetIndex = new Dictionary<string, (int Category, int Index)>(); // Looping through 800 elements is not a light task :/

@@ -198,8 +198,8 @@ namespace iiMenu.Mods
 
         public static void BlankPage()
         {
+            Buttons.buttons[Buttons.GetCategory("Temporary Category")] = Array.Empty<ButtonInfo>();
             currentCategoryName = "Temporary Category";
-            Buttons.buttons[29] = Array.Empty<ButtonInfo>();
         }
 
         public static void CopyCustomGamemodeScript()
@@ -1282,6 +1282,9 @@ namespace iiMenu.Mods
                 {
                     nametag.Value.GetComponent<TextMeshPro>().fontStyle = activeFontStyle;
                     nametag.Value.GetComponent<TextMeshPro>().font = activeFont;
+
+                    if (Visuals.nameTagChams)
+                        nametag.Value.GetComponent<TextMeshPro>().Chams();
 
                     nametag.Value.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f) * nametag.Key.scaleFactor;
 

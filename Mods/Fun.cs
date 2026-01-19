@@ -38,6 +38,8 @@ using iiMenu.Menu;
 using iiMenu.Patches.Menu;
 using iiMenu.Utilities;
 using Ionic.Zlib;
+using Modio.Mods;
+using Oculus.Platform;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Voice;
@@ -56,6 +58,7 @@ using System.Reflection;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Windows;
 using UnityEngine.Windows.Speech;
 using static iiMenu.Menu.Main;
 using static iiMenu.Utilities.AssetUtilities;
@@ -958,20 +961,70 @@ namespace iiMenu.Mods
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
 
-        public static void CustomModSpoofer(string mods)
+        public static readonly Dictionary<string, string> modsToSpoof = new Dictionary<string, string>();
+
+        public static void ReloadModsToSpoof(string key, string value, bool add = true)
         {
-            string[] input = mods.Split(',').Select(s => s.Trim()).ToArray();
+            if (add)
+                modsToSpoof.Add(key, value);
+            else if (!add)
+                modsToSpoof.Remove(key);
             Hashtable props = new Hashtable();
 
-            foreach (string mod in input)
-            {
-                if (Visuals.modDictionary.TryGetKeyByValue(mod, out string keyName))
-                    props[keyName] = true;
-                else
-                    props[mod] = true;
-            }
+            foreach (string mod in modsToSpoof.Keys)
+                props[mod] = true;
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+        }
+        public static void CustomModSpoofer()
+        {
+            Prompt("Would you like to choose from a mod list or type the mod property?", () =>
+            {
+                List<ButtonInfo> modList = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Mod List", method = () => currentCategoryName = "Main", isTogglable = false, toolTip = "Returns you back to the main page." } };
+
+                for (int i = 0; i < Visuals.modDictionary.Count; i++)
+                {
+                    KeyValuePair<string, string> mod = Visuals.modDictionary.ElementAt(i);
+                    modList.Add(
+                        new ButtonInfo
+                        {
+                            buttonText = $"Mod{i}",
+                            overlapText = mod.Value,
+                            enableMethod = () => ReloadModsToSpoof(mod.Key, mod.Value),
+                            disableMethod = () => ReloadModsToSpoof(mod.Key, mod.Value, false),
+                            toolTip = $"Show that you are using the mod {mod.Value} to other players."
+                        });
+                }
+
+
+                Buttons.buttons[Buttons.GetCategory("Mod List")] = modList.ToArray();
+                currentCategoryName = "Mod List";
+            }, () =>
+            {
+                PromptSingleText("Please enter what you would like to spoof your mods to (seperated by commas).", () =>
+                {
+                    string[] input = keyboardInput.Split(',').Select(s => s.Trim()).ToArray();
+                    Hashtable props = new Hashtable();
+
+                    foreach(string mod in input)
+                    {
+                        string foundKey = null;
+
+                        foreach (var kv in Visuals.modDictionary)
+                        {
+                            if (string.Equals(kv.Value, mod, StringComparison.OrdinalIgnoreCase))
+                            {
+                                foundKey = kv.Key;
+                                break;
+                            }
+                        }
+
+                        props[foundKey ?? mod] = true;
+                    }
+
+                    PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+                }, "Done");
+            }, "Mod List", "Type");
         }
 
         public static void MuteDJSets()
@@ -2175,7 +2228,6 @@ Piece Name: {gunTarget.name}";
         public static void BlockBrowser()
         {
             rememberdirectory = pageNumber;
-            currentCategoryName = "Temporary Category";
 
             Dictionary<int, string> allBlockData = GetAllBlockData();
             List<ButtonInfo> blockButtons = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Building Block Browser", method = RemoveCosmeticBrowser, isTogglable = false, toolTip = "Returns you back to the fun mods." } };
@@ -2197,7 +2249,8 @@ Piece Name: {gunTarget.name}";
                 i++;
             }
 
-            Buttons.buttons[29] = blockButtons.ToArray();
+            Buttons.buttons[Buttons.GetCategory("Temporary Category")] = blockButtons.ToArray();
+            currentCategoryName = "Temporary Category";
         }
 
         public static void SetRespawnDistance(string objectName, float respawnDistance = float.MaxValue)
@@ -4163,7 +4216,7 @@ Piece Name: {gunTarget.name}";
                         NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> You are not master client.");
                     else
                     {
-                        RequestCreatePiece(pieceIdSet, NewPointer.transform.position + RandomVector3(0.3f), RandomQuaternion(), 0, null, true);
+                        RequestCreatePiece(pieceIdSet, NewPointer.transform.position, RandomQuaternion(), 0, null, true);
                         RPCProtection();
                     }
                 }
@@ -4177,7 +4230,7 @@ Piece Name: {gunTarget.name}";
             Temporary.transform.position = position;
             Object.Destroy(Temporary.GetComponent<Collider>());
             yield return new WaitForSeconds(0.5f);
-            RequestCreatePiece(pieceIdSet, Temporary.transform.position + RandomVector3(0.3f), RandomQuaternion(), 0, null, true);
+            RequestCreatePiece(pieceIdSet, Temporary.transform.position, RandomQuaternion(), 0, null, true);
             Object.Destroy(Temporary);
             RPCProtection();
         }
@@ -6031,7 +6084,6 @@ Piece Name: {gunTarget.name}";
         public static void CosmeticBrowser()
         {
             rememberdirectory = pageNumber;
-            currentCategoryName = "Temporary Category";
 
             List<ButtonInfo> cosmeticbuttons = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Cosmetic Browser", method = () => RemoveCosmeticBrowser(), isTogglable = false, toolTip = "Returns you back to the fun mods." } };
             foreach (CosmeticsController.CosmeticItem hat in CosmeticsController.instance.allCosmetics)
@@ -6039,13 +6091,15 @@ Piece Name: {gunTarget.name}";
                 if (hat.canTryOn)
                     cosmeticbuttons.Add(new ButtonInfo { buttonText = ToTitleCase(hat.overrideDisplayName), method = () => AddCosmeticToCart(hat.itemName), isTogglable = false, toolTip = "Adds the " + hat.overrideDisplayName.ToLower() + "to your cart." });
             }
-            Buttons.buttons[29] = cosmeticbuttons.ToArray();
+            Buttons.buttons[Buttons.GetCategory("Temporary Category")] = cosmeticbuttons.ToArray();
+
+            currentCategoryName = "Temporary Category";
         }
 
         public static void RemoveCosmeticBrowser()
         {
-            currentCategoryName = "Fun Mods";
             pageNumber = rememberdirectory;
+            currentCategoryName = "Fun Mods";
         }
 
         public static void AutoLoadCosmetics()
@@ -6628,6 +6682,7 @@ Piece Name: {gunTarget.name}";
             Process.Start(filePath);
         }
 
+        /*
         public static string consoleTyped = "";
         public static int currentModIndex = 0;
         public static int pageNumber = 0;
@@ -6766,6 +6821,6 @@ $@"{largeNewLine}
 {screenLine}
 
 > {consoleTyped}");
-        }
+        }*/
     }
 }

@@ -779,10 +779,29 @@ namespace iiMenu.Mods
             Toggle("Virtual Stump Kick All");
         }
 
-        public static void VirtualStumpKickMasterClient()
+        public static void GameEntityKickMaster(GameEntityManager manager)
         {
             if (NetworkSystem.Instance.IsMasterClient)
                 return;
+
+            if (manager == null)
+                return;
+
+            if (Buttons.GetIndex("Kick Fix").enabled)
+            {
+                if (ManagerRegistry.SuperInfection.SuperInfectionManager != null && manager == ManagerRegistry.SuperInfection.SuperInfectionManager)
+                    ManagerRegistry.SuperInfection.SuperInfectionManager.photonView.RPC("SIClientToClientRPC", RpcTarget.MasterClient, new object[]
+                    {
+                        Array.Empty<int>(),
+                        Array.Empty<int>(),
+                        Array.Empty<bool[]>(),
+                        0,
+                        0,
+                        0,
+                        Array.Empty<int>(),
+                        Array.Empty<int>()
+                    });
+            }
 
             byte[] byteData = new byte[15360];
             MemoryStream memoryStream = new MemoryStream(byteData);
@@ -792,7 +811,7 @@ namespace iiMenu.Mods
 
             for (int i = 0; i < 4; i++)
             {
-                binaryWriter.Write(ManagerRegistry.CustomMaps.GameEntityManager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
+                binaryWriter.Write(manager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
                 binaryWriter.Write(GorillaTagger.Instance.bodyCollider.transform.position.Pack());
                 binaryWriter.Write(BitPackUtils.PackQuaternionForNetwork(GorillaTagger.Instance.bodyCollider.transform.rotation));
                 binaryWriter.Write(0L);
@@ -805,7 +824,7 @@ namespace iiMenu.Mods
             Buffer.BlockCopy(bytes, 0, padding, 0, bytes.Length);
             bytes = padding;
 
-            ManagerRegistry.CustomMaps.GameEntityManager.SendRPC(
+            manager.SendRPC(
                 "JoinWithItemsRPC",
                 RpcTarget.MasterClient,
                 bytes,
@@ -814,6 +833,29 @@ namespace iiMenu.Mods
             );
 
             RPCProtection();
+        }
+
+        public const int ItemCrashCount = 500;
+        public static void GameEntityCrash(GameEntityManager manager, object target, Vector3? targetPosition = null)
+        {
+            if (manager == null)
+                return;
+
+            targetPosition ??= GorillaTagger.Instance.bodyCollider.transform.position;
+
+            int[] objectIds = manager.itemPrefabFactory.Keys.ToArray();
+            int[] ids = new int[ItemCrashCount];
+            Vector3[] positions = new Vector3[ItemCrashCount];
+            Quaternion[] rotations = new Quaternion[ItemCrashCount];
+
+            for (int i = 0; i < ItemCrashCount; i++)
+            {
+                ids[i] = objectIds[Random.Range(0, objectIds.Length)];
+                positions[i] = targetPosition.Value;
+                rotations[i] = Quaternion.identity;
+            }
+
+            CreateItems(target, ids, positions, rotations, manager: manager);
         }
 
         public static int masterVisualizationType;
@@ -892,7 +934,7 @@ namespace iiMenu.Mods
                     if (gunTarget && !gunTarget.IsLocal() && Time.time > kgDebounce)
                     {
                         kgDebounce = Time.time + 0.2f;
-                        VirtualStumpKickMasterClient();
+                        GameEntityKickMaster(ManagerRegistry.CustomMaps.GameEntityManager);
                     }
                 }
             }
@@ -904,7 +946,7 @@ namespace iiMenu.Mods
             while (PhotonNetwork.InRoom && !NetworkSystem.Instance.IsMasterClient)
             {
                 int masterActor = NetworkSystem.Instance.MasterClient.ActorNumber;
-                VirtualStumpKickMasterClient();
+                GameEntityKickMaster(ManagerRegistry.CustomMaps.GameEntityManager);
 
                 float timeDelay = Time.time + 1f;
                 yield return new WaitUntil(() => !PhotonNetwork.CurrentRoom.Players.ContainsKey(masterActor) || Time.time > timeDelay);
@@ -982,80 +1024,6 @@ namespace iiMenu.Mods
         public static void GhostReactorCrashAll() =>
             GameEntityCrash(ManagerRegistry.GhostReactor.GameEntityManager, RpcTarget.Others);
 
-        public static void GhostReactorKickMasterClient()
-        {
-            if (NetworkSystem.Instance.IsMasterClient)
-                return;
-
-            byte[] byteData = new byte[15360];
-            MemoryStream memoryStream = new MemoryStream(byteData);
-            BinaryWriter binaryWriter = new BinaryWriter(memoryStream);
-
-            binaryWriter.Write(4);
-
-            for (int i = 0; i < 4; i++)
-            {
-                binaryWriter.Write(ManagerRegistry.GhostReactor.GameEntityManager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
-                binaryWriter.Write(GorillaTagger.Instance.bodyCollider.transform.position.Pack());
-                binaryWriter.Write(BitPackUtils.PackQuaternionForNetwork(GorillaTagger.Instance.bodyCollider.transform.rotation));
-                binaryWriter.Write(0L);
-                binaryWriter.Write((byte)3);
-            }
-
-            byte[] bytes = GZipStream.CompressBuffer(byteData);
-            byte[] padding = new byte[1960];
-
-            Buffer.BlockCopy(bytes, 0, padding, 0, bytes.Length);
-            bytes = padding;
-
-            ManagerRegistry.GhostReactor.GameEntityManager.SendRPC(
-                "JoinWithItemsRPC",
-                RpcTarget.MasterClient,
-                bytes,
-                new int[0],
-                NetworkSystem.Instance.LocalPlayer.ActorNumber
-            );
-
-            RPCProtection();
-        }
-        
-        public static void SuperInfectionKickMasterClient()
-        {
-            if (NetworkSystem.Instance.IsMasterClient)
-                return;
-
-            byte[] byteData = new byte[15360];
-            MemoryStream memoryStream = new MemoryStream(byteData);
-            BinaryWriter binaryWriter = new BinaryWriter(memoryStream);
-
-            binaryWriter.Write(4);
-
-            for (int i = 0; i < 4; i++)
-            {
-                binaryWriter.Write(ManagerRegistry.SuperInfection.GameEntityManager.itemPrefabFactory.Keys.ToArray().GetRandomItem());
-                binaryWriter.Write(GorillaTagger.Instance.bodyCollider.transform.position.Pack());
-                binaryWriter.Write(BitPackUtils.PackQuaternionForNetwork(GorillaTagger.Instance.bodyCollider.transform.rotation));
-                binaryWriter.Write(0L);
-                binaryWriter.Write((byte)3);
-            }
-
-            byte[] bytes = GZipStream.CompressBuffer(byteData);
-            byte[] padding = new byte[1960];
-
-            Buffer.BlockCopy(bytes, 0, padding, 0, bytes.Length);
-            bytes = padding;
-
-            ManagerRegistry.SuperInfection.GameEntityManager.SendRPC(
-                "JoinWithItemsRPC",
-                RpcTarget.MasterClient,
-                bytes,
-                new int[0],
-                NetworkSystem.Instance.LocalPlayer.ActorNumber
-            );
-
-            RPCProtection();
-        }
-
         private static float kgDebounce;
         public static void GhostReactorKickGun()
         {
@@ -1075,7 +1043,7 @@ namespace iiMenu.Mods
                     if (gunTarget && !gunTarget.IsLocal() && Time.time > kgDebounce)
                     {
                         kgDebounce = Time.time + 0.2f;
-                        GhostReactorKickMasterClient();
+                        GameEntityKickMaster(ManagerRegistry.GhostReactor.GameEntityManager);
                     }
                 }
             }
@@ -1087,7 +1055,7 @@ namespace iiMenu.Mods
             while (PhotonNetwork.InRoom && !NetworkSystem.Instance.IsMasterClient)
             {
                 int masterActor = NetworkSystem.Instance.MasterClient.ActorNumber;
-                GhostReactorKickMasterClient();
+                GameEntityKickMaster(ManagerRegistry.GhostReactor.GameEntityManager);
 
                 float timeDelay = Time.time + 1f;
                 yield return new WaitUntil(() => !PhotonNetwork.CurrentRoom.Players.ContainsKey(masterActor) || Time.time > timeDelay);
@@ -1123,7 +1091,7 @@ namespace iiMenu.Mods
                     if (gunTarget && !gunTarget.IsLocal() && Time.time > kgDebounce)
                     {
                         kgDebounce = Time.time + 0.2f;
-                        SuperInfectionKickMasterClient();
+                        GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager);
                     }
                 }
             }
@@ -1135,7 +1103,7 @@ namespace iiMenu.Mods
             while (PhotonNetwork.InRoom && !NetworkSystem.Instance.IsMasterClient)
             {
                 int masterActor = NetworkSystem.Instance.MasterClient.ActorNumber;
-                SuperInfectionKickMasterClient();
+                GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager);
 
                 float timeDelay = Time.time + 1f;
                 yield return new WaitUntil(() => !PhotonNetwork.CurrentRoom.Players.ContainsKey(masterActor) || Time.time > timeDelay);
@@ -1151,28 +1119,6 @@ namespace iiMenu.Mods
                 CoroutineManager.instance.StopCoroutine(siKickAllCoroutine);
 
             siKickAllCoroutine = CoroutineManager.instance.StartCoroutine(SIKickAllCoroutine());
-        }
-
-        public const int ItemCrashCount = 80;
-        public static void GameEntityCrash(GameEntityManager manager, object target, Vector3? targetPosition = null)
-        {
-            if (manager == null)
-                return;
-
-            targetPosition ??= GorillaTagger.Instance.bodyCollider.transform.position;
-
-            int[] objectIds = manager.itemPrefabFactory.Keys.ToArray();
-            int[] randomObjectIds = Enumerable.Range(0, ItemCrashCount)
-                .Select(_ => objectIds[Random.Range(0, objectIds.Length)])
-                .ToArray();
-            Vector3[] randomPositions = Enumerable.Range(0, ItemCrashCount)
-                .Select(_ => targetPosition.Value)
-                .ToArray();
-            Quaternion[] randomQuaternions = Enumerable.Range(0, ItemCrashCount)
-                .Select(_ => RandomQuaternion())
-                .ToArray();
-
-            CreateItems(target, randomObjectIds, randomPositions, randomQuaternions, manager: manager);
         }
 
         public static void SuperInfectionCrashGun()
@@ -1663,30 +1609,40 @@ namespace iiMenu.Mods
 
                 ghostReactorDelay = Time.time + gameEntityManager.m_RpcSpamChecks.m_callLimiters[(int)GameEntityManager.RPC.CreateItems].GetDelay();
 
-                List<int> netIds = new List<int>();
-                for (int i = 0; i < hashes.Length; i++)
-                    netIds.Add(gameEntityManager.CreateNetId());
-
                 if (target is NetPlayer netPlayer)
                     target = NetPlayerToPlayer(netPlayer);
 
                 sendData ??= Enumerable.Repeat(0L, hashes.Length).ToArray();
 
-                object[] createData = {
-                    netIds.ToArray(),
-                    hashes,
-                    positions.Select(position => BitPackUtils.PackWorldPosForNetwork(position)).ToArray(),
-                    rotations.Select(rotation => BitPackUtils.PackQuaternionForNetwork(rotation)).ToArray(),
-                    sendData
+                byte[] data = new byte[15360];
+                MemoryStream memoryStream = new MemoryStream(data);
+                BinaryWriter binaryWriter = new BinaryWriter(memoryStream);
+                binaryWriter.Write(hashes.Length);
+
+                for (int i = 0; i < hashes.Length; i++)
+                {
+                    binaryWriter.Write(manager.CreateNetId());
+                    binaryWriter.Write(hashes[i]);
+                    binaryWriter.Write(BitPackUtils.PackWorldPosForNetwork(positions[i]));
+                    binaryWriter.Write(BitPackUtils.PackQuaternionForNetwork(rotations[i]));
+                    binaryWriter.Write(sendData[i]);
+                }
+
+                byte[] array = GZipStream.CompressBuffer(data);
+
+                object[] createData = new object[] 
+                { 
+                    (int)manager.zone, 
+                    array 
                 };
 
                 switch (target)
                 {
                     case RpcTarget rpcTarget:
-                        gameEntityManager.photonView.RPC("CreateItemRPC", rpcTarget, createData);
+                        gameEntityManager.photonView.RPC("CreateItemsRPC", rpcTarget, createData);
                         break;
                     case Player player:
-                        gameEntityManager.photonView.RPC("CreateItemRPC", player, createData);
+                        gameEntityManager.photonView.RPC("CreateItemsRPC", player, createData);
                         break;
                 }
 
@@ -2054,6 +2010,42 @@ namespace iiMenu.Mods
                     characterIndex = 0;
                     basePosition = null;
                 }
+            }
+        }
+
+        public static IEnumerator DrawSmallDelay(Vector3 position, int id, GameEntityManager manager)
+        {
+            GameObject Temporary = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Temporary.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            Temporary.transform.position = position;
+            Object.Destroy(Temporary.GetComponent<Collider>());
+            yield return new WaitForSeconds(0.5f);
+            CreateItem(RpcTarget.All, id, Temporary.transform.position + new Vector3(0f, 0.1f, 0f), RandomQuaternion(), Vector3.zero, Vector3.zero, manager: manager);
+            Object.Destroy(Temporary);
+            RPCProtection();
+        }
+
+        public static void GhostReactorDrawGun()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                GameObject NewPointer = GunData.NewPointer;
+
+                if (GetGunInput(true))
+                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, ObjectByName["GhostReactorCollectibleCore"], ManagerRegistry.GhostReactor.GameEntityManager));
+            }
+        }
+
+        public static void SuperInfectionDrawGun()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                GameObject NewPointer = GunData.NewPointer;
+
+                if (GetGunInput(true))
+                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, GadgetByName["SIGadgetDashYoyo"], ManagerRegistry.SuperInfection.GameEntityManager));
             }
         }
 
@@ -3636,7 +3628,7 @@ namespace iiMenu.Mods
         public static bool NoDelaySnowballs;
         public static int SnowballTime;
 
-        public static void BetaSpawnSnowball(Vector3 Pos, Vector3 Vel, int Mode, Player Target = null, int? customScale = null)
+        public static void BetaSpawnSnowball(Vector3 Pos, Vector3 Vel, int Mode, Player Target = null, int? customScale = null, bool ignoreMultiply = false)
         {
             try
             {
@@ -3669,7 +3661,7 @@ namespace iiMenu.Mods
                     SendSerialize(GorillaTagger.Instance.myVRRig.GetView, options);
                 }
 
-                for (int i = 0; i < snowballMultiplicationFactor; i++)
+                for (int i = 0; i < (ignoreMultiply ? 1 : snowballMultiplicationFactor); i++)
                 {
                     SnowballTime++;
 
@@ -3763,7 +3755,7 @@ namespace iiMenu.Mods
         }
 
         private static Vector3? snowballNukePosition;
-        private static Vector3 velocity;
+        private static Vector3 snowballNukeVelocity;
         public static void SnowballNukeGun()
         {
             if (GetGunInput(false))
@@ -3775,11 +3767,11 @@ namespace iiMenu.Mods
                 {
                     snowballNukePosition ??= NewPointer.transform.position + (Vector3.up * 50f);
                     snowballNukePosition += Time.unscaledDeltaTime * Physics.gravity;
-                    velocity += Time.unscaledDeltaTime * Physics.gravity;
+                    snowballNukeVelocity += Time.unscaledDeltaTime * Physics.gravity;
 
                     if (Time.time > snowballDelay)
                     {
-                        BetaSpawnSnowball(snowballNukePosition.Value + RandomVector3(velocity.magnitude * 0.25f).X_Z(), velocity, 0);
+                        BetaSpawnSnowball(snowballNukePosition.Value + RandomVector3(snowballNukeVelocity.magnitude * 0.25f).X_Z(), snowballNukeVelocity, 0);
                         snowballDelay = Time.time + SnowballSpawnDelay;
                     }
                 }
@@ -3787,7 +3779,7 @@ namespace iiMenu.Mods
             else
             {
                 snowballNukePosition = null;
-                velocity = Vector3.zero;
+                snowballNukeVelocity = Vector3.zero;
             }
         }
 
@@ -3815,6 +3807,55 @@ namespace iiMenu.Mods
             }
         }
 
+        public static void SnowballFountain()
+        {
+            if (rightTrigger > 0.5f)
+            {
+                if (Time.time > snowballDelay)
+                {
+                    BetaSpawnSnowball(VRRig.LocalRig.transform.position + Vector3.up, new Vector3(Random.Range(-15f, 15f), Random.Range(20f, 25f), Random.Range(-15f, 15f)), 0);
+                    snowballDelay = Time.time + SnowballSpawnDelay;
+                }
+            }
+        }
+
+        public static GameObject FountainObject;
+        public static void SnowballPositionalFountain()
+        {
+            if (rightGrab)
+            {
+                if (FountainObject == null)
+                {
+                    FountainObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    Object.Destroy(FountainObject.GetComponent<SphereCollider>());
+                    FountainObject.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+                }
+                FountainObject.transform.position = GorillaTagger.Instance.rightHandTransform.position;
+            }
+            if (FountainObject != null)
+            {
+                if (rightTrigger > 0.5f)
+                {
+                    if (Time.time > snowballDelay)
+                    {
+                        BetaSpawnSnowball(FountainObject.transform.position, new Vector3(Random.Range(-15f, 15f), Random.Range(20f, 25f), Random.Range(-15f, 15f)), 0);
+                        snowballDelay = Time.time + SnowballSpawnDelay;
+                    }
+                }
+                else
+                    FountainObject.GetComponent<Renderer>().material.color = buttonColors[0].GetColor(0);
+            }
+        }
+
+        public static void DisableSnowballPositionalFountain()
+        {
+            if (FountainObject != null)
+            {
+                Object.Destroy(FountainObject);
+                FountainObject = null;
+            }
+        }
+
         public static void SnowballOrbit()
         {
             if (rightTrigger > 0.5f)
@@ -3835,6 +3876,24 @@ namespace iiMenu.Mods
                 {
                     BetaSpawnSnowball(GorillaTagger.Instance.headCollider.transform.position + RandomVector3(), RandomVector3() * 20f, 0);
                     snowballDelay = Time.time + SnowballSpawnDelay;
+                }
+            }
+        }
+
+        public static void SnowballMushroom()
+        {
+            if (rightTrigger > 0.5f)
+            {
+                if (Time.time > snowballDelay)
+                {
+                    int count = 15;
+
+                    snowballDelay = Time.time + SnowballSpawnDelay * count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        float rotation = i == 0 ? 0f : (360f / count * i);
+                        BetaSpawnSnowball(GorillaTagger.Instance.headCollider.transform.position + Vector3.up, (Vector3.up * 15f) + (Quaternion.Euler(0f, rotation, 0f) * Vector3.forward).normalized * 2.5f, 0);
+                    }
                 }
             }
         }
@@ -3951,7 +4010,76 @@ namespace iiMenu.Mods
                 for (int i = 0; i < 5; i++)
                     BetaSpawnSnowball(GorillaTagger.Instance.rightHandTransform.position, velocity + RandomVector3(5f), 0);
 
-                snowballDelay = Time.time + (SnowballSpawnDelay * 5);
+                snowballDelay = Time.time + (SnowballSpawnDelay * 5f);
+            }
+        }
+
+        public static void SnowballWall()
+        {
+            if ((rightGrab || Mouse.current.leftButton.isPressed) && Time.time > snowballDelay)
+            {
+                Vector3 velocity = GetGunDirection(GorillaTagger.Instance.rightHandTransform) * (ShootStrength * 5f);
+                if (Mouse.current.leftButton.isPressed)
+                {
+                    Ray ray = TPC.ScreenPointToRay(Mouse.current.position.ReadValue());
+                    Physics.Raycast(ray, out var hit, 512f, NoInvisLayerMask());
+                    velocity = hit.point - GorillaTagger.Instance.rightHandTransform.transform.position;
+                    velocity.Normalize();
+                    velocity *= ShootStrength * 2f;
+                }
+
+                for (int x = -2; x <= 2; x++)
+                {
+                    for (int y = -2; y <= 2; y++)
+                    {
+                        var (_, _, up, _, right) = ControllerUtilities.GetTrueRightHand();
+                        BetaSpawnSnowball(GorillaTagger.Instance.rightHandTransform.position + (right * (x * 0.666f)) + (up * (y * 0.666f)), velocity, 0);
+                    }
+                }
+
+                snowballDelay = Time.time + (SnowballSpawnDelay * 25f);
+            }
+        }
+
+        public static GameObject BombObject;
+        public static void SnowballBomb()
+        {
+            if (rightGrab)
+            {
+                if (BombObject == null)
+                {
+                    BombObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    Object.Destroy(BombObject.GetComponent<SphereCollider>());
+                    BombObject.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+                }
+                BombObject.transform.position = GorillaTagger.Instance.rightHandTransform.position;
+            }
+            if (BombObject != null)
+            {
+                if (rightPrimary)
+                {
+                    if (Time.time > snowballDelay)
+                    {
+                        for (int i = 0; i < 5; i++)
+                            BetaSpawnSnowball(BombObject.transform.position, RandomVector3(500f), 0);
+
+                        snowballDelay = Time.time + (SnowballSpawnDelay * 5f);
+                    }
+
+                    Object.Destroy(BombObject);
+                    BombObject = null;
+                }
+                else
+                    BombObject.GetComponent<Renderer>().material.color = buttonColors[0].GetColor(0);
+            }
+        }
+
+        public static void DisableBomb()
+        {
+            if (BombObject != null)
+            {
+                Object.Destroy(BombObject);
+                BombObject = null;
             }
         }
 
@@ -4070,6 +4198,22 @@ namespace iiMenu.Mods
                 if (!rig.isOfflineVRRig && rig.rightThumb.calcT > 0.5f)
                 {
                     BetaSpawnSnowball(rig.headMesh.transform.position + new Vector3(0f, 0.5f, 0f) + new Vector3(-rig.headMesh.transform.forward.x, 0f, -rig.headMesh.transform.forward.z) * 1.5f, new Vector3(0f, -300f, 0f), 2, rig.OwningNetPlayer.GetPlayerRef());
+                    SetBoxingDelay(rig);
+                }
+            }
+        }
+
+        public static void SnowballHighJump()
+        {
+            foreach (VRRig rig in GorillaParent.instance.vrrigs)
+            {
+                if (Time.time < GetBoxingDelay(rig))
+                    return;
+                Physics.Raycast(rig.bodyTransform.position - new Vector3(0f, 0.2f, 0f), Vector3.down, out var Ray, 512f, GTPlayer.Instance.locomotionEnabledLayers);
+
+                if (!rig.isOfflineVRRig && (Ray.distance > 0.12f && Ray.distance < 0.2f))
+                {
+                    BetaSpawnSnowball(rig.headMesh.transform.position + new Vector3(0f, -0.7f, 0f), new Vector3(0f, -500f, 0f), 2, rig.OwningNetPlayer.GetPlayerRef());
                     SetBoxingDelay(rig);
                 }
             }
@@ -4198,7 +4342,7 @@ namespace iiMenu.Mods
                 Vector3 targetDirection = (cursor.transform.position - snowballPosition).normalized * 60f;
 
                 BetaSpawnSnowball(snowballPosition, targetDirection, 0);
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(SnowballSpawnDelay);
             }
 
             Vector3 _ = GorillaTagger.Instance.leftHandTransform.position.Lerp(GorillaTagger.Instance.rightHandTransform.position, 0.5f);
@@ -4281,6 +4425,107 @@ namespace iiMenu.Mods
                 if (gunLocked)
                     gunLocked = false;
             }
+        }
+
+        public static void SnowballLaunchGun()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                RaycastHit Ray = GunData.Ray;
+
+                if (gunLocked && lockTarget != null)
+                {
+                    if (Time.time > snowballDelay)
+                    {
+                        int count = 10;
+
+                        snowballDelay = Time.time + SnowballSpawnDelay * count;
+                        for (int i = 0; i < count; i++)
+                        {
+                            float rotation = i == 0 ? 0f : (360f / count * i);
+                            BetaSpawnSnowball(lockTarget.transform.position + new Vector3(0f, 0.5f, 0f) + (Quaternion.Euler(0f, rotation, 0f) * Vector3.forward).normalized / 1.7f, new Vector3(0f, -500f, 0f), 2, lockTarget.GetPhotonPlayer());
+                        }
+                    }
+                }
+
+                if (GetGunInput(true))
+                {
+                    VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
+                    if (gunTarget && !gunTarget.IsLocal())
+                    {
+                        gunLocked = true;
+                        lockTarget = gunTarget;
+                    }
+                }
+            }
+            else
+            {
+                if (gunLocked)
+                    gunLocked = false;
+            }
+        }
+
+        public static readonly List<GameObject> flingZones = new List<GameObject>();
+        public static void SnowballFlingZone()
+        {
+            if (rightGrab)
+            {
+                bool isNearCheckpoint = false;
+                foreach (var checkpoint in flingZones.Where(checkpoint => Vector3.Distance(GorillaTagger.Instance.rightHandTransform.position, checkpoint.transform.position) < 0.5f))
+                {
+                    isNearCheckpoint = true;
+                    checkpoint.transform.position = GorillaTagger.Instance.rightHandTransform.transform.position;
+                    break;
+                }
+
+                if (!isNearCheckpoint)
+                {
+                    GameObject newCheckpoint = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    Object.Destroy(newCheckpoint.GetComponent<SphereCollider>());
+                    newCheckpoint.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                    newCheckpoint.transform.position = GorillaTagger.Instance.rightHandTransform.position;
+                    newCheckpoint.GetComponent<Renderer>().material.shader = Shader.Find("GUI/Text Shader");
+                    newCheckpoint.GetComponent<Renderer>().material.color = new Color(1f, 0f, 0f, 0.3f);
+                    flingZones.Add(newCheckpoint);
+                }
+            }
+
+            if (rightTrigger > 0.5f)
+            {
+                foreach (var checkpoint in flingZones.ToList().Where(checkpoint => Vector3.Distance(GorillaTagger.Instance.rightHandTransform.position, checkpoint.transform.position) < 0.5f))
+                {
+                    flingZones.Remove(checkpoint);
+                    Object.Destroy(checkpoint);
+                }
+            }
+
+            if (Time.time > snowballDelay)
+            {
+                int flingCount = 0;
+                foreach (VRRig rig in GorillaParent.instance.vrrigs.Where(rig => !rig.IsLocal()))
+                {
+                    foreach (var checkpoint in flingZones)
+                    {
+                        if (Vector3.Distance(rig.transform.position, checkpoint.transform.position) < 0.5f || Vector3.Distance(rig.leftHandTransform.position, checkpoint.transform.position) < 0.5f || Vector3.Distance(rig.rightHandTransform.position, checkpoint.transform.position) < 0.5f)
+                        {
+                            BetaSpawnSnowball(checkpoint.transform.position, new Vector3(0f, -500f, 0f), 2, rig.GetPhotonPlayer());
+                            flingCount++;
+                        }
+                    }
+                }
+
+                if (flingCount > 0)
+                    snowballDelay = Time.time + SnowballSpawnDelay * flingCount;
+            }
+        }
+
+        public static void DisableSnowballFlingZone()
+        {
+            foreach (GameObject checkpoint in flingZones)
+                Object.Destroy(checkpoint);
+
+            flingZones.Clear();
         }
 
         public static void SnowballFlingAll()
@@ -4877,7 +5122,7 @@ namespace iiMenu.Mods
         {
             boxingDelay.Remove(rig);
 
-            boxingDelay.Add(rig, Time.time + 0.5f);
+            boxingDelay.Add(rig, SnowballSpawnDelay);
         }
 
         public static void Boxing()
@@ -5025,9 +5270,6 @@ namespace iiMenu.Mods
         }
 
         private static float freezeAllDelay;
-        private static float freezeAllNotificationDelay;
-        private static bool heldTriggerWhilePlayersCorrect;
-
         public static void FreezeAll_OnPlayerLeave(NetPlayer _) =>
             NotificationManager.SendNotification("<color=grey>[</color><color=green>FREEZE</color><color=grey>]</color> You may now use Freeze All.");
 
@@ -5037,44 +5279,28 @@ namespace iiMenu.Mods
 
             if (rightTrigger > 0.5f)
             {
-                if (PhotonNetwork.PlayerList.Length < PhotonNetwork.CurrentRoom.MaxPlayers || heldTriggerWhilePlayersCorrect)
+                SerializePatch.OverrideSerialization = () => false;
+
+                if (Time.time > freezeAllDelay)
                 {
-                    SerializePatch.OverrideSerialization = () => false;
-
-                    heldTriggerWhilePlayersCorrect = true;
-
-                    if (Time.time > freezeAllDelay)
+                    for (int i = 0; i < 11; i++)
                     {
-                        for (int i = 0; i < 11; i++)
+                        WebFlags flags = new WebFlags(255);
+                        NetEventOptions options = new NetEventOptions
                         {
-                            WebFlags flags = new WebFlags(1);
-                            NetEventOptions options = new NetEventOptions
-                            {
-                                Flags = flags,
-                                TargetActors = new[] { -1 }
-                            };
-                            byte code = 51;
-                            NetworkSystemRaiseEvent.RaiseEvent(code, new object[] { serverLink }, options, reliable: false);
-                        }
+                            Flags = flags,
+                            TargetActors = new[] { -1 }
+                        };
+                        byte code = 51;
+                        NetworkSystemRaiseEvent.RaiseEvent(code, new object[] { serverLink }, options, reliable: false);
+                    }
 
-                        RPCProtection();
-                        freezeAllDelay = Time.time + 0.1f;
-                    }
-                }
-                else
-                {
-                    if (Time.time > freezeAllNotificationDelay)
-                    {
-                        freezeAllNotificationDelay = Time.time + 0.1f;
-                        NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Please wait for a user to leave.");
-                    }
+                    RPCProtection();
+                    freezeAllDelay = Time.time + 0.1f;
                 }
             }
             else
-            {
                 SerializePatch.OverrideSerialization = null;
-                heldTriggerWhilePlayersCorrect = false;
-            }
         }
 
         public static float zaWarudoNotificationDelay;
@@ -5096,18 +5322,19 @@ namespace iiMenu.Mods
         public static void ZaWarudo_OnPlayerLeave(NetPlayer player) =>
             NotificationManager.SendNotification("<color=grey>[</color><color=green>FREEZE</color><color=grey>]</color> You may now use Za Warudo.");
 
+        private static bool zaWarudoTrigger;
         public static void ZaWarudo()
         {
             if (!PhotonNetwork.InRoom) return;
 
-            if (rightTrigger > 0.5f && PhotonNetwork.PlayerList.Length < PhotonNetwork.CurrentRoom.MaxPlayers)
+            if (rightTrigger > 0.5f)
             {
-                if (heldTriggerWhilePlayersCorrect || Buttons.GetIndex("No Freeze Za Warudo").enabled)
+                if (Buttons.GetIndex("No Freeze Za Warudo").enabled)
                 {
                     if (!Buttons.GetIndex("No Freeze Za Warudo").enabled)
                         SerializePatch.OverrideSerialization = () => false;
 
-                    if (!heldTriggerWhilePlayersCorrect)
+                    if (!zaWarudoTrigger)
                     {
                         if (ZaWarudo_StartCoroutineVariable != null)
                         {
@@ -5124,7 +5351,7 @@ namespace iiMenu.Mods
                         ZaWarudo_StartCoroutineVariable = CoroutineManager.instance.StartCoroutine(ZaWarudo_StartCoroutine());
                     }
 
-                    heldTriggerWhilePlayersCorrect = true;
+                    zaWarudoTrigger = true;
 
                     Movement.LowGravity();
 
@@ -5132,7 +5359,7 @@ namespace iiMenu.Mods
                     {
                         for (int i = 0; i < 11; i++)
                         {
-                            WebFlags flags = new WebFlags(1);
+                            WebFlags flags = new WebFlags(255);
                             NetEventOptions options = new NetEventOptions
                             {
                                 Flags = flags,
@@ -5146,18 +5373,10 @@ namespace iiMenu.Mods
                         freezeAllDelay = Time.time + 0.1f;
                     }
                 }
-                else
-                {
-                    if (Time.time > freezeAllNotificationDelay)
-                    {
-                        freezeAllNotificationDelay = Time.time + 0.1f;
-                        NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Please wait for a user to leave.");
-                    }
-                }
             }
             else
             {
-                if (heldTriggerWhilePlayersCorrect)
+                if (zaWarudoTrigger)
                 {
                     if (ZaWarudo_StartCoroutineVariable != null)
                     {
@@ -5175,8 +5394,7 @@ namespace iiMenu.Mods
                 }
 
                 SerializePatch.OverrideSerialization = null;
-
-                heldTriggerWhilePlayersCorrect = false;
+                zaWarudoTrigger = false;
             }
         }
 

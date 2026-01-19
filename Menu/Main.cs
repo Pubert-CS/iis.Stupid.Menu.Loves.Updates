@@ -1765,7 +1765,8 @@ namespace iiMenu.Menu
 
             pageNumber = 0;
 
-            ReloadMenu();
+            if (!clickGUI)
+                ReloadMenu();
         }
 
         private static void AddButton(float offset, int buttonIndex, ButtonInfo method)
@@ -6973,7 +6974,7 @@ jgs \_   _/ |Oo\
             "You need oxygen to live.",
             "You need to be nourished to live.",
             "The letter \"A\" is at the beginning of the alphabet. The letter \"T\" is at the beginning of both of these sentences. Why are you looking there? You're wasting your time. You're wasting even MORE time reading this. Ok bye. STOP READING!!!",
-            "iiDk has a shitty bluetooth keyboard.",
+            "iiDk has a terrible bluetooth keyboard.",
             "You're wasting your time reading this.",
             "rocklobster222 is awsum",
             "kingofnetflix was here </3",

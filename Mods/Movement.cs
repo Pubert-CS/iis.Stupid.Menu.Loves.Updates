@@ -2409,14 +2409,15 @@ namespace iiMenu.Mods
         public static void EnterTeleportToMap() // Credits to Malachi for the positions
         {
             rememberPageNumber = pageNumber;
-            currentCategoryName = "Temporary Category";
-
+            
             List<ButtonInfo> tpbuttons = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Teleport to Map", method = ExitTeleportToMap, isTogglable = false, toolTip = "Returns you back to the movement mods." } };
 
             foreach (string[] Data in mapData)
                 tpbuttons.Add(new ButtonInfo { buttonText = "TeleportMap" + tpbuttons.Count, overlapText = Data[0], method = () => TeleportToMap(Data[1], Data[2]), isTogglable = false, toolTip = "Teleports you to the " + Data[0] + " map." });
             
-            Buttons.buttons[29] = tpbuttons.ToArray();
+            Buttons.buttons[Buttons.GetCategory("Temporary Category")] = tpbuttons.ToArray();
+
+            currentCategoryName = "Temporary Category";
         }
 
         public static void TeleportToMap(string zone, string pos)
@@ -2539,9 +2540,11 @@ namespace iiMenu.Mods
 
                     Renderer MeshRender = newMesh.GetComponent<Renderer>();
                     MeshRender.GetComponent<Renderer>().material.shader = Shader.Find("GUI/Text Shader");
-                    newMesh.fontSize = 12;
-                    newMesh.fontStyle = activeFontStyle;
+                    newMesh.fontSize = 1.2f;
+                    newMesh.SafeSetFont(activeFont);
+                    newMesh.SafeSetFontStyle(activeFontStyle);
                     newMesh.alignment = TextAlignmentOptions.Center;
+                    newMesh.Chams();
                     newMesh.color = Color.white;
                     newMesh.text = (checkpoints.Count + 1).ToString();
 
@@ -3113,6 +3116,9 @@ namespace iiMenu.Mods
             VRRig.LocalRig.leftHand.rigTarget.transform.rotation = GorillaTagger.Instance.bodyCollider.transform.rotation * Quaternion.Euler(0f, 180f, 180f);
             VRRig.LocalRig.rightHand.rigTarget.transform.rotation = GorillaTagger.Instance.bodyCollider.transform.rotation * Quaternion.Euler(0f, 180f, 180f);
         }
+
+        public static void DecapitateRigUpdate() =>
+            VRRig.LocalRig.head.rigTarget.transform.rotation = GorillaTagger.Instance.bodyCollider.transform.rotation * Quaternion.Euler(160f, 90f, 0f);
 
         public static void SetBodyPatch(bool enabled, int mode = 0)
         {

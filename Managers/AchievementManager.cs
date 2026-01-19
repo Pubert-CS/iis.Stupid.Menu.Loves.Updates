@@ -58,7 +58,6 @@ namespace iiMenu.Managers
         public static void EnterAchievementTab()
         {
             int achievementCount = Achievements.Count;
-            currentCategoryName = "Temporary Category";
 
             List<ButtonInfo> achievementButtons = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Achievements", method = () => currentCategoryName = "Main", isTogglable = false, toolTip = "Returns you back to the main page." } };
             
@@ -84,7 +83,8 @@ namespace iiMenu.Managers
                         });
                 }
 
-            Buttons.buttons[29] = achievementButtons.ToArray();
+            Buttons.buttons[Buttons.GetCategory("Achievements")] = achievementButtons.ToArray();
+            currentCategoryName = "Achievements";
         }
 
         public static bool HasAchievement(string name) =>
