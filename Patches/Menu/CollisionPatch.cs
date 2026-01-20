@@ -1,5 +1,5 @@
 /*
- * ii's Stupid Menu  Patches/Menu/LoadModPatch.cs
+ * ii's Stupid Menu  Patches/Menu/CollisionPatch.cs
  * A mod menu for Gorilla Tag with over 1000+ mods
  *
  * Copyright (C) 2026  Goldentrophy Software
@@ -19,24 +19,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using GorillaTagScripts.VirtualStumpCustomMaps;
 using HarmonyLib;
-using iiMenu.Mods.CustomMaps;
-using Modio.Mods;
+using System;
+using UnityEngine;
 
 namespace iiMenu.Patches.Menu
 {
-    [HarmonyPatch(typeof(CustomMapManager), "LoadMap")]
-    public class LoadModPatch
+    [HarmonyPatch(typeof(SlingshotProjectile), "OnCollisionEnter")]
+    public class CollisionPatch
     {
-        public static void Prefix(ModId modId) =>
-            Manager.UpdateCustomMapsTab(modId);
-    }
+        public static event Action<SlingshotProjectile, Collision> OnCollisionEnterEvent;
 
-    [HarmonyPatch(typeof(CustomMapManager), "UnloadMap")]
-    public class UnloadModPatch
-    {
-        public static void Prefix(bool returnToSinglePlayerIfInPublic) =>
-            Manager.UpdateCustomMapsTab();
+        private static void Prefix(SlingshotProjectile __instance, Collision collision)
+        {
+            if (__instance != null && !__instance.dontDestroyOnHit && __instance.particleLaunched)
+                OnCollisionEnterEvent?.Invoke(__instance, collision);
+        }
     }
 }

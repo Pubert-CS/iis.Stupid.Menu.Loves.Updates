@@ -200,6 +200,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Custom Font Type", enableMethod = Settings.CustomFontType, method = Settings.PersistCustomFont, disableMethod = Settings.DisableCustomFont, toolTip = $"Changes the font type on the menu to a custom font. You can change the photo inside of your Gorilla Tag files ({PluginInfo.BaseDirectory}/iiMenu_CustomWatermark.txt)."},
                 new ButtonInfo { buttonText = "Change Font Style Type", method =() => Settings.ChangeFontStyleType(), enableMethod =() => Settings.ChangeFontStyleType(), disableMethod =() => Settings.ChangeFontStyleType(false), incremental = true, isTogglable = false, toolTip = "Changes the style of the font."},
                 new ButtonInfo { buttonText = "Change Input Text Color", overlapText = "Change Input Text Color <color=grey>[</color><color=green>Green</color><color=grey>]</color>", method =() => Settings.ChangeInputTextColor(), enableMethod =() => Settings.ChangeInputTextColor(), disableMethod =() => Settings.ChangeInputTextColor(false), incremental = true, isTogglable = false, toolTip = "Changes the color of the input indicator next to the buttons."},
+                new ButtonInfo { buttonText = "Vibrant Text Colors", enableMethod =() => vibrantColors = true, disableMethod =() => vibrantColors = false, toolTip = "Makes certain green and purple colors more vibrant." },
                 new ButtonInfo { buttonText = "Change PC Menu Background", method =() => Settings.ChangePCUI(), enableMethod =() => Settings.ChangePCUI(), disableMethod =() => Settings.ChangePCUI(false), incremental = true, isTogglable = false, toolTip = "Changes the background of the PC ui."},
                 new ButtonInfo { buttonText = "Change Joystick Menu Position", method =() => Settings.ChangeJoystickMenuPosition(), enableMethod =() => Settings.ChangeJoystickMenuPosition(), disableMethod =() => Settings.ChangeJoystickMenuPosition(false), incremental = true, isTogglable = false, toolTip = "Changes the position of the joystick menu."},
                 new ButtonInfo { buttonText = "Change Notification Time", overlapText = "Change Notification Time <color=grey>[</color><color=green>1</color><color=grey>]</color>", method =() => Settings.ChangeNotificationTime(), enableMethod =() => Settings.ChangeNotificationTime(), disableMethod =() => Settings.ChangeNotificationTime(false), incremental = true, isTogglable = false, toolTip = "Changes the time before a notification is removed."},
@@ -347,9 +348,6 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Reverse Intercourse", toolTip = "Turns you into the receiver when using the intercourse gun."},
 
                 new ButtonInfo { buttonText = "Elevated Sticky Drive", toolTip = "Makes you float higher in the air whenever you use Sticky Drive."},
-
-                new ButtonInfo { buttonText = "Knockback Multiplication Amount", overlapText = "Knockback Multiplication Amount <color=grey>[</color><color=green>1.5</color><color=grey>]</color>", method =() => Movement.MultiplicationAmount(), enableMethod =() => Movement.MultiplicationAmount(), disableMethod =() => Movement.MultiplicationAmount(false), incremental = true, isTogglable = false, toolTip = "Adjusts how much your knockback is multiplied."},
-
                 new ButtonInfo { buttonText = "High Quality Portals", toolTip = "Makes the view through the portals higher quality." }
             },
 
@@ -385,7 +383,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Client Sided Projectiles", toolTip = "Makes projectiles only appear for you." },
 
                 new ButtonInfo { buttonText = "Override Projectile Index", method =() => IndexPatch.enabled = true, disableMethod =() => IndexPatch.enabled = false, toolTip = "Forces a specific projectile index on random projectiles." },
-                new ButtonInfo { buttonText = "Change Projectile Index", overlapText = "Change Projectile Index <color=grey>[</color><color=green>1</color><color=grey>]</color>", method =() => Projectiles.ChangeProjectileIndex(true), enableMethod =() => Projectiles.ChangeProjectileIndex(true), disableMethod =() => Projectiles.ChangeProjectileIndex(false), incremental = true, isTogglable = false, toolTip = "Changes the targetted projectile index on the \"Override Projectile Index\" mod." },
+                new ButtonInfo { buttonText = "Change Projectile Index", overlapText = "Change Projectile Index <color=grey>[</color><color=green>1</color><color=grey>]</color>", method =() => Projectiles.ChangeProjectileIndex(), enableMethod =() => Projectiles.ChangeProjectileIndex(), disableMethod =() => Projectiles.ChangeProjectileIndex(false), incremental = true, isTogglable = false, toolTip = "Changes the targetted projectile index on the \"Override Projectile Index\" mod." },
 
                 new ButtonInfo { buttonText = "Change Projectile Delay", overlapText = "Change Projectile Delay <color=grey>[</color><color=green>0.1</color><color=grey>]</color>", method =() => Projectiles.ChangeProjectileDelay(true, true), enableMethod =() => Projectiles.ChangeProjectileDelay(true, true), disableMethod =() => Projectiles.ChangeProjectileDelay(false, true), incremental = true, isTogglable = false, toolTip = "Gives the projectiles a delay before spawning another." },
 
@@ -661,7 +659,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Long Jump <color=grey>[</color><color=green>A</color><color=grey>]</color>", overlapText = "Playspace Abuse <color=grey>[</color><color=green>A</color><color=grey>]</color>", method = Movement.PlayspaceAbuse, toolTip = "Makes you look like you're legitimately long jumping when holding <color=green>A</color>."},
                 new ButtonInfo { buttonText = "Velocity Long Arms", overlapText = "Predictions", enableMethod = Movement.CreateVelocityTrackers, method = Movement.VelocityLongArms, disableMethod = Movement.DestroyVelocityTrackers, toolTip = "Moves your arms farther depending on how fast you move them."},
 
-                new ButtonInfo { buttonText = "Timer", enableMethod =() => TimerPatch.enabled = true, method = Movement.Timer, disableMethod =() => { TimerPatch.enabled = false; Time.timeScale = 1f; GorillaLocomotion.GTPlayer.Instance.debugMovement = false;  }, toolTip = "Speeds up or slows down the time of your game."},
+                new ButtonInfo { buttonText = "Timer", enableMethod =() => TimerPatch.enabled = true, method = Movement.Timer, disableMethod =() => { TimerPatch.enabled = false; Time.timeScale = 1f; GTPlayer.Instance.debugMovement = false;  }, toolTip = "Speeds up or slows down the time of your game."},
 
                 new ButtonInfo { buttonText = "Speed Boost", method = Movement.SpeedBoost, toolTip = "Changes your speed to whatever you set it to."},
                 new ButtonInfo { buttonText = "Grip Speed Boost", method =() => { if (rightGrab) { Movement.SpeedBoost(); } }, toolTip = "Changes your speed to whatever you set it to, if you're holding right grip."},
@@ -1033,6 +1031,15 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Confuse Player Gun", method = Movement.ConfusePlayerGun, toolTip = "Makes whoever your hand desires look like they're going crazy by splashing water on their screen."},
                 new ButtonInfo { buttonText = "Confuse All Players", enableMethod = Movement.ConfuseAllPlayers, method = Movement.ConfuseAllPlayersSplash, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Splashes water on everyone's screens, making them look like they're going crazy."},
+                
+                new ButtonInfo { buttonText = "Tinnitus Gun", method = Movement.TinnitusGun, disableMethod = Movement.DisableTinnitus, toolTip = "Plays high pitched noises for whoever your hand desires."},
+                new ButtonInfo { buttonText = "Tinnitus All", enableMethod = Movement.TinnitusAll, disableMethod = Movement.DisableTinnitus, toolTip = "Plays high pitched noises for everyone in the room."},
+
+                new ButtonInfo { buttonText = "Overstimulate Gun", method = Movement.OverstimulateGun, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Overstimulates whoever your hand desires."},
+                new ButtonInfo { buttonText = "Overstimulate All", method = Movement.OverstimulateAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Overstimulates everyone in the room."},
+
+                new ButtonInfo { buttonText = "Shutdown Headset Gun", method = Movement.ShutdownHeadsetGun, disableMethod = Movement.DisableTinnitus, toolTip = "Pretends to shut down the headset of whoever your hand desires."},
+                new ButtonInfo { buttonText = "Shutdown Headset All", method = Movement.ShutdownHeadsetAll, disableMethod = Movement.DisableTinnitus, toolTip = "Pretends to shut down the headset of everyone in the room."},
 
                 new ButtonInfo { buttonText = "Schizophrenic Gun", method = Movement.SchizophrenicGun, toolTip = "Makes you not appear for whoever your hand desires."},
                 new ButtonInfo { buttonText = "Reverse Schizophrenic Gun", method = Movement.ReverseSchizoGun, toolTip = "Makes you only appear for whoever your hand desires."},
@@ -1314,7 +1321,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Chaser Enemy Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method =() => Overpowered.SpamObjectGrip(Overpowered.ObjectByName["GhostReactorEnemyChaser"]), toolTip = "Spawns chasing enemies out of your hand when holding <color=green>grip</color>."},
                 new ButtonInfo { buttonText = "Armored Ranged Enemy Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method =() => Overpowered.SpamObjectGrip(Overpowered.ObjectByName["GhostReactorEnemyRangedArmored"]), toolTip = "Spawns armored ranged enemies out of your hand when holding <color=green>grip</color>."},
                 new ButtonInfo { buttonText = "Armored Chaser Enemy Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method =() => Overpowered.SpamObjectGrip(Overpowered.ObjectByName["GhostReactorEnemyChaserArmored"]), toolTip = "Spawns armored chasing enemies out of your hand when holding <color=green>grip</color>."},
-                new ButtonInfo { buttonText = "Entity Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method =() => Overpowered.SpamEntityGrip(), toolTip = "Spawns a random entity out of your hand when holding <color=green>grip</color>."},
+                new ButtonInfo { buttonText = "Entity Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SpamEntityGrip, toolTip = "Spawns a random entity out of your hand when holding <color=green>grip</color>."},
 
                 new ButtonInfo { buttonText = "Gate Gun", method =() => Overpowered.SpamObjectGun(Overpowered.ObjectByName["GhostReactorEnergyCostGate"]), toolTip = "Spawns gates at wherever your hand desires."},
                 new ButtonInfo { buttonText = "Core Gun", method =() => Overpowered.SpamObjectGun(Overpowered.ObjectByName["GhostReactorCollectibleCore"]), toolTip = "Spawns collectible cores at wherever your hand desires."},
@@ -1398,9 +1405,9 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Gadget Gun", method = Overpowered.GadgetSpamGun, toolTip = "Spawns random gadgets at wherever your hand desires."},
                 new ButtonInfo { buttonText = "Resource Gun", method = Overpowered.ResourceSpamGun, toolTip = "Spawns random resources at wherever your hand desires."},
 
-                new ButtonInfo { buttonText = "Rain Gadgets", method =() => Overpowered.RainGadgets(), toolTip = "Makes random gadgets fall around you like rain."},
-                new ButtonInfo { buttonText = "Gadget Aura", method =() => Overpowered.GadgetAura(), toolTip = "Creates a ball of random gadgets around you."},
-                new ButtonInfo { buttonText = "Gadget Fountain", method =() => Overpowered.GadgetFountain(), toolTip = "Spurts random gadgets out of your head like a fountain."},
+                new ButtonInfo { buttonText = "Rain Gadgets", method = Overpowered.RainGadgets, toolTip = "Makes random gadgets fall around you like rain."},
+                new ButtonInfo { buttonText = "Gadget Aura", method = Overpowered.GadgetAura, toolTip = "Creates a ball of random gadgets around you."},
+                new ButtonInfo { buttonText = "Gadget Fountain", method = Overpowered.GadgetFountain, toolTip = "Spurts random gadgets out of your head like a fountain."},
 
                 new ButtonInfo { buttonText = "Super Infection Text Gun", enableMethod =() => PromptText("What text would you like to show?", () => Overpowered.textToRender = keyboardInput.ToUpper(), null, "Done", "Cancel"), method = Overpowered.SuperInfectionTextGun, toolTip = "Spawns entities in the shape of the text you desire in the Super Infection gamemode."},
                 new ButtonInfo { buttonText = "Super Infection Draw Gun", method = Overpowered.SuperInfectionDrawGun, toolTip = "Allows you to draw with entities in Super Infection."},
@@ -1644,7 +1651,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Rebind Left Joystick", enableMethod =() => Settings.StartRebind("LJ"), disableMethod =() => IsRebinding = false, toolTip = "Enables rebinding mode, letting you change a mod's button."},
                 new ButtonInfo { buttonText = "Rebind Right Joystick", enableMethod =() => Settings.StartRebind("RJ"), disableMethod =() => IsRebinding = false, toolTip = "Enables rebinding mode, letting you change a mod's button."},
 
-                new ButtonInfo { buttonText = "Clear Rebinds", method = () => Settings.RemoveRebinds(), isTogglable = false, toolTip = "Removes all rebinds."},
+                new ButtonInfo { buttonText = "Clear Rebinds", method = Settings.RemoveRebinds, isTogglable = false, toolTip = "Removes all rebinds."},
             },
 
             new[] { // Sound Spam Mods [14]
@@ -1684,9 +1691,10 @@ namespace iiMenu.Menu
             new[] { // Projectile Spam Mods [15]
                 new ButtonInfo { buttonText = "Exit Projectile Mods", method =() => currentCategoryName = "Main", isTogglable = false, toolTip = "Returns you back to the main page."},
 
-                new ButtonInfo { buttonText = "Grab Projectile <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.GrabProjectile, toolTip = "Grabs your selected projectile(s) holding <color=green>grip</color>. You can change the projectile(s) in Settings > Projectile Settings" },
-                new ButtonInfo { buttonText = "Projectile Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.ProjectileSpam, toolTip = "Spams your selected projectile(s) when holding <color=green>grip</color>. You can change the projectile(s) in Settings > Projectile Settings" },
-                new ButtonInfo { buttonText = "Laser Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.LazerSpam, toolTip = "Spams your selected projectile(s) out of your eyes like lasers when holding <color=green>grip</color>. You can change the projectile(s) in Settings > Projectile Settings" },
+                new ButtonInfo { buttonText = "Grab Projectile <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.GrabProjectile, toolTip = "Grabs your selected projectile(s) holding <color=green>grip</color>." },
+                new ButtonInfo { buttonText = "Projectile Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.ProjectileSpam, toolTip = "Spams your selected projectile(s) when holding <color=green>grip</color>." },
+                new ButtonInfo { buttonText = "Projectile Gun <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.ProjectileGun, toolTip = "Spams your selected projectile(s) at wherever your hand desires." },
+                new ButtonInfo { buttonText = "Laser Spam <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Projectiles.LazerSpam, toolTip = "Spams your selected projectile(s) out of your eyes like lasers when holding <color=green>grip</color>." },
                 new ButtonInfo { buttonText = "Give Projectile Spam Gun", method = Projectiles.GiveProjectileSpamGun, toolTip = "Acts like the projectile spam, but you can give it to whoever your hand desires when they hold <color=green>grip</color>." },
                 new ButtonInfo { buttonText = "Impact Spam", method = Projectiles.ImpactSpam, toolTip = "Acts like the projectile spam, but uses the impacts instead." },
 
@@ -1710,7 +1718,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Projectile Lag Gun", method = Projectiles.ProjectileLagGun, toolTip = "Lags whoever your hand desires using the firework projectiles."},
                 new ButtonInfo { buttonText = "Projectile Lag All", enableMethod = Projectiles.ProjectileLagAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Lags everybody in the room using the firework projectiles."},
 
-                new ButtonInfo { buttonText = "Snowball Spam", method = Overpowered.SnowballSpam, toolTip = "Spams snowballs when holding <color=green>grip</color>. You can change the projectile(s) in Settings > Projectile Settings"},
+                new ButtonInfo { buttonText = "Snowball Spam", method = Overpowered.SnowballSpam, toolTip = "Spams snowballs when holding <color=green>grip</color>."},
 
                 new ButtonInfo { buttonText = "Snowball Gun", method = Overpowered.SnowballGun, toolTip = "Spawns a snowball wherever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball Nuke Gun", method = Overpowered.SnowballNukeGun, toolTip = "Spawns a lot of snowballs airstriking from the sky at wherever your hand desires."},
@@ -1732,10 +1740,11 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Snowball Shotgun <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballShotgun, toolTip = "Spawns snowballs around wherever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball Wall <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballWall, toolTip = "Spawns a wall of snowballs towards wherever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball C4 <color=grey>[</color><color=green>G</color><color=grey>]</color>", method = Overpowered.SnowballBomb, disableMethod = Overpowered.DisableBomb, toolTip = "Place a C4 with <color=green>grip</color> and detonate it with <color=green>A</color>. It will spawn snowballs at wherever the bomb is."},
+                new ButtonInfo { buttonText = "Snowball RPG <color=grey>[</color><color=green>G</color><color=grey>]</color>", enableMethod =() => CollisionPatch.OnCollisionEnterEvent += Overpowered.OnSnowballHit, method = Overpowered.SnowballRPG, toolTip = "Shoots a snowball with <color=green>grip</color> It will spawn snowballs at the landing point."},
 
                 new ButtonInfo { buttonText = "Snowball Boxing", method = Overpowered.SnowballBoxing, toolTip = "Gives everyone punch mod with the snowballs."},
                 new ButtonInfo { buttonText = "Snowball Dash <color=grey>[</color><color=green>A</color><color=grey>]</color>", method = Overpowered.SnowballDash, toolTip = "Allows other players to dash themself into the air with the snowballs."},
-                new ButtonInfo { buttonText = "Snowball High Jump", method =() => Overpowered.SnowballHighJump(), toolTip = "Allow everyone to jump higher."},
+                new ButtonInfo { buttonText = "Snowball High Jump", method = Overpowered.SnowballHighJump, toolTip = "Allow everyone to jump higher."},
                 new ButtonInfo { buttonText = "Snowball Particle Gun", method = Overpowered.SnowballParticleGun, toolTip = "Spawns snowball particles wherever your hand desires."},
                 new ButtonInfo { buttonText = "Snowball Impact Effect Gun", method = Overpowered.SnowballImpactEffectGun, toolTip = "Spawns snowball impact events on whoever your hand desires."},
 
@@ -1790,7 +1799,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Strobe Color Gun", method = Overpowered.StrobeColorGun, toolTip = "Flashes whoever your hand desires' color between red and blue."},
                 new ButtonInfo { buttonText = "Strobe Color All", method = Overpowered.StrobeColorAll, toolTip = "Flashes everyone in the room's color between red and blue."},
 
-                new ButtonInfo { buttonText = "Material Self", method =() => { if (Time.time > Overpowered.materialDelay) { Overpowered.MaterialTarget(VRRig.LocalRig); Overpowered.materialDelay = Time.time + 0.1f;  } }, toolTip = "Flashes the materials of yourself."},
+                new ButtonInfo { buttonText = "Material Self", method =() => { if (!(Time.time > Overpowered.materialDelay)) return; Overpowered.MaterialTarget(VRRig.LocalRig); Overpowered.materialDelay = Time.time + 0.1f; }, toolTip = "Flashes the materials of yourself."},
                 new ButtonInfo { buttonText = "Material Gun", method = Overpowered.MaterialGun, toolTip = "Flashes the materials of whoever your hand desires."},
                 new ButtonInfo { buttonText = "Material All", method = Overpowered.MaterialAll, toolTip = "Flashes the materials of everyone in the room."},
 
@@ -2349,6 +2358,8 @@ namespace iiMenu.Menu
             new[] { // Overpowered Settings [31]
                 new ButtonInfo { buttonText = "Exit Overpowered Settings", method =() => currentCategoryName = "Settings", isTogglable = false, toolTip = "Returns you back to the settings menu."},
 
+                new ButtonInfo { buttonText = "Graphic Punch Mod", toolTip = "Spawns blood projectiles when hitting other players with the allowed punch mods."},
+
                 new ButtonInfo { buttonText = "No Freeze Za Warudo", toolTip = "Disables the freezing on the \"Za Warudo\" mod, turning it into a fun mod." },
                 new ButtonInfo { buttonText = "Legacy Kick Freeze", enableMethod =() => Overpowered.legacyKickFreeze = true, disableMethod =() => Overpowered.legacyKickFreeze = false, toolTip = "Makes call overflow related kick methods freeze the rig instead of putting it in the low event state." },
 
@@ -2414,6 +2425,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Exit Fun Settings", method =() => currentCategoryName = "Settings", isTogglable = false, toolTip = "Returns you back to the settings menu."},
 
                 new ButtonInfo { buttonText = "Change Head Spin Speed", overlapText = "Change Head Spin Speed <color=grey>[</color><color=green>0</color><color=grey>]</color>", method =() => Fun.ChangeHeadSpinSpeed(), enableMethod =() => Fun.ChangeHeadSpinSpeed(), disableMethod =() => Fun.ChangeHeadSpinSpeed(false), incremental = true, isTogglable = false, toolTip = "Changes the speed of the head spin mods." },
+                new ButtonInfo { buttonText = "Change Tinnitus Hertz", overlapText = "Change Tinnitus Hertz <color=grey>[</color><color=green>6000</color><color=grey>]</color>", method =() => Movement.ChangeTinnitusHz(), enableMethod =() => Movement.ChangeTinnitusHz(), disableMethod =() => Movement.ChangeTinnitusHz(false), incremental = true, isTogglable = false, toolTip = "Changes the target hertz for the tinnitus mods."},
 
                 new ButtonInfo { buttonText = "Zero Gravity Bugs", toolTip = "Removes the gravity from the bugs on the Bug Spam mod."},
                 new ButtonInfo { buttonText = "Bug Colliders", toolTip = "Gives the bug colliders on the Bug Spam mod."},
@@ -2426,6 +2438,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Change Badge Tier", overlapText = "Change Badge Tier <color=grey>[</color><color=green>Banana</color><color=grey>]</color>", method =() => Safety.ChangeBadgeTier(), enableMethod =() => Safety.ChangeBadgeTier(), disableMethod =() => Safety.ChangeBadgeTier(false), incremental = true, isTogglable = false, toolTip = "Changes the target tier for the badge spoof mod."},
 
                 new ButtonInfo { buttonText = "Change Target FOV", overlapText = "Change Target FOV <color=grey>[</color><color=green>90</color><color=grey>]</color>", method =() => Fun.ChangeTargetFOV(), enableMethod =() => Fun.ChangeTargetFOV(), disableMethod =() => Fun.ChangeTargetFOV(false), incremental = true, isTogglable = false, toolTip = "Changes the target field of view for the \"Camera FOV\" mod."},
+                new ButtonInfo { buttonText = "Knockback Multiplication Amount", overlapText = "Knockback Multiplication Amount <color=grey>[</color><color=green>1.5</color><color=grey>]</color>", method =() => Movement.MultiplicationAmount(), enableMethod =() => Movement.MultiplicationAmount(), disableMethod =() => Movement.MultiplicationAmount(false), incremental = true, isTogglable = false, toolTip = "Adjusts how much your knockback is multiplied."},
 
                 new ButtonInfo { buttonText = "Zero Gravity Blocks", toolTip = "Removes the gravity from the blocks."},
                 new ButtonInfo { buttonText = "Random Block Type", toolTip = "Selects a random block when using block mods."},
@@ -2436,7 +2449,9 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Change Block Delay", overlapText = "Change Block Delay <color=grey>[</color><color=green>0</color><color=grey>]</color>", method =() => Fun.ChangeBlockDelay(), enableMethod =() => Fun.ChangeBlockDelay(), disableMethod =() => Fun.ChangeBlockDelay(false), incremental = true, isTogglable = false, toolTip = "Gives the blocks a delay before spawning." },
                 new ButtonInfo { buttonText = "Change Cycle Delay", overlapText = "Change Name Cycle Delay <color=grey>[</color><color=green>1</color><color=grey>]</color>", method =() => Fun.ChangeCycleDelay(), enableMethod =() => Fun.ChangeCycleDelay(), disableMethod =() => Fun.ChangeCycleDelay(false), incremental = true, isTogglable = false, toolTip = "Changes the delay on name cycle mods." },
 
-                new ButtonInfo { buttonText = "Entity Gravity", toolTip = "Gives gravity to any spawned intities in the ghost reactor or Super Infection gamemode."}
+                new ButtonInfo { buttonText = "Entity Gravity", toolTip = "Gives gravity to any spawned entities in the ghost reactor or Super Infection gamemode."},
+
+                new ButtonInfo { buttonText = "Tinnitus Self", enableMethod =() => Movement.tinnitusSelf = true, disableMethod =() => Movement.tinnitusSelf = false, toolTip = "Be able to hear the loud beep the menu creates with this mod on. God save your ears."},
             },
 
             new[] { // Players [37]
@@ -2579,8 +2594,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Gamemode Exclude Aura", method = Detected.GamemodeExcludeAura, detected = true, toolTip = "Excludes players nearby you from the current gamemode."},
                 new ButtonInfo { buttonText = "Gamemode Exclude On Touch", method = Detected.GamemodeExcludeOnTouch, detected = true, toolTip = "Excludes players you touch from the current gamemode."},
                 
-                new ButtonInfo { buttonText = "Break Network Triggers", method =() => Detected.BreakNetworkTriggers(), isTogglable = false, detected = true, toolTip = "Breaks the network triggers."},
-                new ButtonInfo { buttonText = "Kick Network Triggers", method =() => Detected.KickNetworkTriggers(), isTogglable = false, detected = true, toolTip = "Makes all network triggers kick you."},
+                new ButtonInfo { buttonText = "Break Network Triggers", method = Detected.BreakNetworkTriggers, isTogglable = false, detected = true, toolTip = "Breaks the network triggers."},
+                new ButtonInfo { buttonText = "Kick Network Triggers", method = Detected.KickNetworkTriggers, isTogglable = false, detected = true, toolTip = "Makes all network triggers kick you."},
 
                 new ButtonInfo { buttonText = "Spaz Gamemode", method = Detected.SpazGamemode, detected = true, toolTip = "Rapidly changes the gamemode."},
                 new ButtonInfo { buttonText = "Break Gamemode", enableMethod =() => Detected.BreakGamemode(true), disableMethod =() => Detected.BreakGamemode(false), detected = true, toolTip = "Breaks the current gamemode."},

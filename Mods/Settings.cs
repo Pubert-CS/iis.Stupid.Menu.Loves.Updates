@@ -716,13 +716,15 @@ namespace iiMenu.Mods
         // The code below is fully safe. I know, it seems suspicious.
         public static void UpdateMenu()
         {
-            if (SystemInfo.operatingSystemFamily.Equals(OperatingSystemFamily.Windows))
+            switch (SystemInfo.operatingSystemFamily)
             {
-                string logoLines = "";
-                foreach (string line in PluginInfo.Logo.Split(@"
+                case OperatingSystemFamily.Windows:
+                {
+                    string logoLines = "";
+                    foreach (string line in PluginInfo.Logo.Split(@"
 "))
-                    logoLines += Environment.NewLine + @" ""    " + line + @" """;
-                string updateScript = @"@echo off
+                        logoLines += Environment.NewLine + @" ""    " + line + @" """;
+                    string updateScript = @"@echo off
 title ii's Stupid Menu
 color 0E
 
@@ -768,22 +770,22 @@ echo Launching Gorilla Tag...
 start steam://run/1533390
 exit";
 
-                string fileName = $"{PluginInfo.BaseDirectory}/UpdateScript.bat";
+                    string fileName = $"{PluginInfo.BaseDirectory}/UpdateScript.bat";
 
-                File.WriteAllText(fileName, updateScript);
+                    File.WriteAllText(fileName, updateScript);
 
-                string filePath = FileUtilities.GetGamePath() + "/" + fileName;
-                Process.Start(filePath);
-                Application.Quit();   
-            }
-            if (SystemInfo.operatingSystemFamily.Equals(OperatingSystemFamily.Linux))
-            {
-        
-                string logoLines = "";
-                foreach (string line in PluginInfo.Logo.Split(@"
+                    string filePath = FileUtilities.GetGamePath() + "/" + fileName;
+                    Process.Start(filePath);
+                    Application.Quit();
+                    break;
+                }
+                case OperatingSystemFamily.Linux:
+                {
+                    string logoLines = "";
+                    foreach (string line in PluginInfo.Logo.Split(@"
 "))
-                    logoLines += Environment.NewLine + @" ""    " + line + @" """;
-string updateScript = @"#!/bin/bash
+                        logoLines += Environment.NewLine + @" ""    " + line + @" """;
+                    string updateScript = @"#!/bin/bash
 clear
 echo " + logoLines + @"
 echo
@@ -820,17 +822,18 @@ echo ""Launching Gorilla Tag...""
 xdg-open ""steam://run/1533390""
 exit 0";
 
-            string fileName = $"{PluginInfo.BaseDirectory}/UpdateScript.sh";
-            File.WriteAllText(fileName, updateScript);
-            Process.Start("chmod", $"+x \"{fileName}\"");
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                Arguments = $"\"{fileName}\"",
-                UseShellExecute = false
-            });
-                Application.Quit();
-
+                    string fileName = $"{PluginInfo.BaseDirectory}/UpdateScript.sh";
+                    File.WriteAllText(fileName, updateScript);
+                    Process.Start("chmod", $"+x \"{fileName}\"");
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "/bin/bash",
+                        Arguments = $"\"{fileName}\"",
+                        UseShellExecute = false
+                    });
+                    Application.Quit();
+                    break;
+                }
             }
         }
 
@@ -4983,10 +4986,15 @@ exit 0";
         public static void DictationPlay(AudioClip clip, float volume)
         {
             bool enabled = Buttons.GetIndex("Global Dynamic Sounds").enabled;
-            if (enabled)
-                Sound.PlayAudio(clip);
-            else if (!enabled)
-                Play2DAudio(clip, volume);
+            switch (enabled)
+            {
+                case true:
+                    Sound.PlayAudio(clip);
+                    break;
+                case false:
+                    Play2DAudio(clip, volume);
+                    break;
+            }
         }
 
         private static LineRenderer clickGuiLine;
@@ -5047,7 +5055,7 @@ exit 0";
             canvasTransform.Find("Main/Sidebar/Watermark").localRotation = Quaternion.Euler(0f, 0f, rockWatermark ? Mathf.Sin(Time.time * 2f) * 10f : 0f);
 
             List<MaskableGraphic> toRecolor = new List<MaskableGraphic>();
-            foreach (string partName in new string[]
+            foreach (string partName in new[]
             {
                 "Main/Sidebar/Title",
                 "Main/Sidebar/Watermark",
@@ -5059,7 +5067,7 @@ exit 0";
                 toRecolor.Add(canvasTransform.Find(partName).GetComponent<MaskableGraphic>());
 
             Transform sidebarTransform = canvasTransform.Find("Main/Sidebar");
-            foreach (string buttonName in new string[]
+            foreach (string buttonName in new[]
             {
                 "Settings", "Players", "Friends"
             })
@@ -5074,8 +5082,7 @@ exit 0";
 
             bool movedSelection = false;
 
-            string[] ignoreButtons = new[]
-            {
+            string[] ignoreButtons = {
                 "Join Discord",
                 "Settings",
                 "Friends",
@@ -5152,6 +5159,7 @@ exit 0";
                     if (inputTextColor != "green")
                         buttonText = buttonText.Replace(" <color=grey>[</color><color=green>", $" <color=grey>[</color><color={inputTextColor}>");
 
+                    buttonText = FixTMProTags(buttonText);
                     buttonText = FollowMenuSettings(buttonText);
 
                     transform.Find("Title").GetComponent<TextMeshProUGUI>().SafeSetText(buttonText);
@@ -5162,6 +5170,7 @@ exit 0";
                     if (inputTextColor != "green")
                         toolTipText = toolTipText.Replace("<color=green>", $"<color={inputTextColor}>");
 
+                    toolTipText = FixTMProTags(toolTipText);
                     toolTipText = FollowMenuSettings(toolTipText);
 
                     transform.Find("ToolTip").GetComponent<TextMeshProUGUI>().SafeSetText(toolTipText);
@@ -5252,7 +5261,7 @@ exit 0";
             {
                 canvasTransform.Find("Main/PromptTab").gameObject.SetActive(true);
 
-                foreach (string partName in new string[]
+                foreach (string partName in new[]
                     {
                         "Main/PromptTab/Title",
                         "Main/PromptTab/Accept/Text",
@@ -5304,7 +5313,7 @@ exit 0";
 
                 if (currentCategoryIndex == 0)
                 {
-                    foreach (string partName in new string[]
+                    foreach (string partName in new[]
                     {
                         "Main/HomeTab/Title",
                         "Main/HomeTab/EnabledTitle",
@@ -5354,7 +5363,7 @@ exit 0";
             {
                 canvasTransform.Find("Main/ModuleTab").gameObject.SetActive(true);
 
-                foreach (string partName in new string[]
+                foreach (string partName in new[]
                     {
                         "Main/ModuleTab/Search/SearchIcon",
                         "Main/ModuleTab/Search/Text Area/Placeholder",
@@ -5435,96 +5444,102 @@ exit 0";
                     }
                 }
 
-                if (XRSettings.isDeviceActive)
+                if (clickGuiLine == null)
                 {
-                    if (clickGuiLine == null)
+                    clickGuiLine = new GameObject("iiMenu_ClickGUILine")
+                        .GetOrAddComponent<LineRenderer>();
+
+                    clickGuiLine.material = new Material(Shader.Find("GUI/Text Shader"));
+                    clickGuiLine.startWidth = 0.025f * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f);
+                    clickGuiLine.endWidth = clickGuiLine.startWidth;
+                    clickGuiLine.useWorldSpace = true;
+                    clickGuiLine.positionCount = 2;
+
+                    if (smoothLines)
                     {
-                        clickGuiLine = new GameObject("iiMenu_ClickGUILine")
-                            .GetOrAddComponent<LineRenderer>();
+                        clickGuiLine.numCapVertices = 10;
+                        clickGuiLine.numCornerVertices = 5;
+                    }
+                }
 
-                        clickGuiLine.material = new Material(Shader.Find("GUI/Text Shader"));
-                        clickGuiLine.startWidth = 0.025f * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f);
-                        clickGuiLine.endWidth = clickGuiLine.startWidth;
-                        clickGuiLine.useWorldSpace = true;
-                        clickGuiLine.positionCount = 2;
+                clickGuiLine.startColor = backgroundColor.GetCurrentColor();
+                clickGuiLine.endColor = backgroundColor.GetCurrentColor(0.5f);
 
-                        if (smoothLines)
+                var uiRaycaster = canvas.GetComponent<GraphicRaycaster>();
+                eventSystem ??= EventSystem.current;
+
+                pointerData ??= new PointerEventData(eventSystem);
+
+                bool useLeft = rightHand || (bothHands && ControllerInputPoller.instance.rightControllerSecondaryButton);
+
+                var (_, _, _, forward, _) = useLeft
+                    ? ControllerUtilities.GetTrueLeftHand()
+                    : ControllerUtilities.GetTrueRightHand();
+
+                if (!XRSettings.isDeviceActive)
+                {
+                    Ray ray = TPC.ScreenPointToRay(Mouse.current.position.ReadValue());
+                    forward = ray.direction;
+                }
+
+                Vector3 startPos = useLeft
+                    ? GorillaTagger.Instance.leftHandTransform.position
+                    : GorillaTagger.Instance.rightHandTransform.position;
+
+                Vector3 direction = forward.normalized;
+
+                Vector3 screenPoint = Camera.main.WorldToScreenPoint(startPos + direction * 5f);
+                pointerData.position = screenPoint;
+
+                uiResults.Clear();
+                uiRaycaster.Raycast(pointerData, uiResults);
+
+                currentUI = uiResults.Count > 0 ? uiResults[0].gameObject : null;
+
+                Vector3 endPos = currentUI != null
+                    ? uiResults[0].worldPosition
+                    : startPos + direction * 5f;
+
+                clickGuiLine.SetPosition(0, startPos);
+                clickGuiLine.SetPosition(1, endPos);
+
+                bool trigger = useLeft ? leftTrigger > 0.5f : rightTrigger > 0.5f;
+                Vector2 currentPos = pointerData.position;
+                pointerData.delta = currentPos - lastPointerPos;
+                lastPointerPos = currentPos;
+
+                if (trigger && !lastTriggerClick && currentUI != null)
+                {
+                    GameObject targetUI = null;
+                    foreach (var result in uiResults)
+                    {
+                        var button = result.gameObject.GetComponent<Button>();
+                        var toggle = result.gameObject.GetComponent<Toggle>();
+                        var slider = result.gameObject.GetComponent<Slider>();
+                        var inputField = result.gameObject.GetComponent<TMP_InputField>();
+
+                        if (button != null || toggle != null || slider != null || inputField != null)
                         {
-                            clickGuiLine.numCapVertices = 10;
-                            clickGuiLine.numCornerVertices = 5;
+                            targetUI = result.gameObject;
+                            break;
                         }
                     }
 
-                    clickGuiLine.startColor = backgroundColor.GetCurrentColor();
-                    clickGuiLine.endColor = backgroundColor.GetCurrentColor(0.5f);
+                    pressedUI = targetUI ?? currentUI;
+                    pointerData.pressPosition = currentPos;
+                    pointerData.pointerPressRaycast = uiResults[0];
 
-                    var uiRaycaster = canvas.GetComponent<GraphicRaycaster>();
-                    eventSystem ??= EventSystem.current;
+                    ExecuteEvents.Execute(pressedUI, pointerData, ExecuteEvents.pointerDownHandler);
+                    pointerData.pointerPress = pressedUI;
 
-                    pointerData ??= new PointerEventData(eventSystem);
+                    isDragging = false;
+                    draggedUI = ExecuteEvents.GetEventHandler<IDragHandler>(currentUI);
+                    pointerData.pointerDrag = draggedUI ?? null;
+                }
 
-                    bool useLeft = rightHand || (bothHands && ControllerInputPoller.instance.rightControllerSecondaryButton);
-
-                    var (_, _, _, forward, _) = useLeft
-                        ? ControllerUtilities.GetTrueLeftHand()
-                        : ControllerUtilities.GetTrueRightHand();
-
-                    Vector3 startPos = useLeft
-                        ? GorillaTagger.Instance.leftHandTransform.position
-                        : GorillaTagger.Instance.rightHandTransform.position;
-
-                    Vector3 direction = forward.normalized;
-
-                    Vector3 screenPoint = Camera.main.WorldToScreenPoint(startPos + direction * 5f);
-                    pointerData.position = screenPoint;
-
-                    uiResults.Clear();
-                    uiRaycaster.Raycast(pointerData, uiResults);
-
-                    currentUI = uiResults.Count > 0 ? uiResults[0].gameObject : null;
-
-                    Vector3 endPos = currentUI != null
-                        ? uiResults[0].worldPosition
-                        : startPos + direction * 5f;
-
-                    clickGuiLine.SetPosition(0, startPos);
-                    clickGuiLine.SetPosition(1, endPos);
-
-                    bool trigger = useLeft ? leftTrigger > 0.5f : rightTrigger > 0.5f;
-                    Vector2 currentPos = pointerData.position;
-                    pointerData.delta = currentPos - lastPointerPos;
-                    lastPointerPos = currentPos;
-
-                    if (trigger && !lastTriggerClick && currentUI != null)
-                    {
-                        GameObject targetUI = null;
-                        foreach (var result in uiResults)
-                        {
-                            var button = result.gameObject.GetComponent<Button>();
-                            var toggle = result.gameObject.GetComponent<Toggle>();
-                            var slider = result.gameObject.GetComponent<Slider>();
-                            var inputField = result.gameObject.GetComponent<TMP_InputField>();
-
-                            if (button != null || toggle != null || slider != null || inputField != null)
-                            {
-                                targetUI = result.gameObject;
-                                break;
-                            }
-                        }
-
-                        pressedUI = targetUI ?? currentUI;
-                        pointerData.pressPosition = currentPos;
-                        pointerData.pointerPressRaycast = uiResults[0];
-
-                        ExecuteEvents.Execute(pressedUI, pointerData, ExecuteEvents.pointerDownHandler);
-                        pointerData.pointerPress = pressedUI;
-
-                        isDragging = false;
-                        draggedUI = ExecuteEvents.GetEventHandler<IDragHandler>(currentUI);
-                        pointerData.pointerDrag = draggedUI ?? null;
-                    }
-
-                    if (trigger && draggedUI != null)
+                switch (trigger)
+                {
+                    case true when draggedUI != null:
                     {
                         if (!isDragging)
                         {
@@ -5543,9 +5558,9 @@ exit 0";
 
                         if (isDragging)
                             ExecuteEvents.Execute(draggedUI, pointerData, ExecuteEvents.dragHandler);
+                        break;
                     }
-
-                    if (!trigger && lastTriggerClick)
+                    case false when lastTriggerClick:
                     {
                         if (pressedUI != null && !isDragging)
                         {
@@ -5563,10 +5578,11 @@ exit 0";
                         pointerData.pointerDrag = null;
                         pointerData.pointerPress = null;
                         isDragging = false;
+                        break;
                     }
-
-                    lastTriggerClick = trigger;
                 }
+
+                lastTriggerClick = trigger;
             }
         }
 
@@ -5791,7 +5807,8 @@ exit 0";
                 Projectiles.snowballIndex.ToString(),
                 characterDistance.ToString(),
                 Overpowered.lagTypeIndex.ToString(),
-                Overpowered.masterVisualizationType.ToString()
+                Overpowered.masterVisualizationType.ToString(),
+                Movement.targetHz.ToString()
             };
 
             string settingstext = string.Join(seperator, settings);
@@ -6061,6 +6078,9 @@ exit 0";
 
                 Overpowered.masterVisualizationType = int.Parse(data[66]) - 1;
                 Overpowered.MasterVisualizationType();
+
+                Movement.targetHz = int.Parse(data[67]) - 500;
+                Movement.ChangeTinnitusHz();
             }
             catch { LogManager.Log("Save file out of date"); }
 
