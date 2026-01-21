@@ -1147,7 +1147,6 @@ namespace iiMenu.Menu
                 #endregion
 
                 #region Miscellaneous
-                hasRemovedThisFrame = false;
                 frameCount++;
                 playTime += Time.unscaledDeltaTime;
 
@@ -3201,8 +3200,8 @@ namespace iiMenu.Menu
                     }
 
                     menu.transform.parent = TPC.transform;
-                    menu.transform.position = TPC.transform.position + TPC.transform.forward * 0.5f;
-                    menu.transform.rotation = TPC.transform.rotation * (clickGUI ? Quaternion.Euler(0f, menu.transform.eulerAngles.y + 180f, 0f) : Quaternion.Euler(-90f, 90f, 0f));
+                    menu.transform.position = clickGUI ? TPC.transform.position + TPC.transform.forward * 1.5f : TPC.transform.position + TPC.transform.forward * 0.5f;
+                    menu.transform.rotation = TPC.transform.rotation * (clickGUI ? Quaternion.Euler(0f, 0f, 0f) : Quaternion.Euler(-90f, 90f, 0f));
 
                     if (reference != null)
                     {
@@ -4210,10 +4209,6 @@ namespace iiMenu.Menu
 
             try
             {
-                if (hasRemovedThisFrame) return;
-                if (NoOverlapRPCs)
-                    hasRemovedThisFrame = true;
-
                 GorillaNot.instance.rpcErrorMax = int.MaxValue;
                 GorillaNot.instance.rpcCallLimit = int.MaxValue;
                 GorillaNot.instance.logErrorMax = int.MaxValue;
@@ -6387,8 +6382,6 @@ jgs \_   _/ |Oo\
         public static bool HasLoaded;
         public static bool hasLoadedPreferences;
         public static bool allowDetected;
-        public static bool hasRemovedThisFrame;
-        public static bool NoOverlapRPCs = true;
         public static float loadPreferencesTime;
         public static float playTime;
         public static int frameCount;
