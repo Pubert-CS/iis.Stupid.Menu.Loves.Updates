@@ -2058,7 +2058,10 @@ namespace iiMenu.Mods
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true))
-                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, ObjectByName["GhostReactorCollectibleCore"], ManagerRegistry.GhostReactor.GameEntityManager));
+                {
+                    int[] objectIds = ObjectByName.Select(element => element.Value).ToArray();
+                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, objectIds[Random.Range(0, objectIds.Length)], ManagerRegistry.GhostReactor.GameEntityManager));
+                }
             }
         }
 
@@ -2070,7 +2073,10 @@ namespace iiMenu.Mods
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true))
-                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, GadgetByName["SIGadgetDashYoyo"], ManagerRegistry.SuperInfection.GameEntityManager));
+                {
+                    int[] objectIds = GadgetByName.Select(element => element.Value).ToArray();
+                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, objectIds[Random.Range(0, objectIds.Length)], ManagerRegistry.SuperInfection.GameEntityManager));
+                }
             }
         }
 
@@ -4154,6 +4160,22 @@ namespace iiMenu.Mods
 
         private static float rpgDelay;
         private static bool rpgShot;
+
+        public static void SnowballGrenade()
+        {
+            if (rightGrab)
+            {
+                rpgShot = true;
+
+                SnowballThrowable Throwable = GetProjectile("SnowballRightAnchor");
+                Throwable.SetSnowballActiveLocal(true);
+
+                Color targetColor = new Color(0f, 0.6f, 0f, 1f);
+                VRRig.LocalRig.SetThrowableProjectileColor(true, targetColor);
+                Throwable.randomizeColor = true;
+                Throwable.ApplyColor(targetColor);
+            }
+        }
 
         public static void SnowballRPG()
         {
