@@ -28,9 +28,11 @@ using Photon.Pun;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Windows;
 using static iiMenu.Menu.Main;
 using static iiMenu.Utilities.AssetUtilities;
 
@@ -58,6 +60,11 @@ namespace iiMenu.Menu
             arraylist = canvas.Find("Arraylist").GetComponent<TextMeshProUGUI>();
             controlBackground = canvas.Find("ControlUI").GetComponent<Image>();
 
+            debugUI = canvas.Find("DebugUI")?.gameObject;
+            debugUI.AddComponent<UIDragWindow>();
+
+            templateLine = debugUI.transform.Find("Lines/Line")?.gameObject;
+
             r = canvas.Find("ControlUI/R").GetComponent<TMP_InputField>();
             g = canvas.Find("ControlUI/G").GetComponent<TMP_InputField>();
             b = canvas.Find("ControlUI/B").GetComponent<TMP_InputField>();
@@ -83,6 +90,19 @@ namespace iiMenu.Menu
                 ChangeName(textInput.text);
             });
 
+            TMP_InputField inputField = debugUI.transform.Find("TextInput").gameObject.GetComponent<TMP_InputField>();
+
+            inputField.onSelect.AddListener(_ => focusedOnDebug = true);
+            inputField.onDeselect.AddListener(_ => focusedOnDebug = false);
+
+            inputField.onEndEdit.AddListener((string text) =>
+            {
+                if (focusedOnDebug && !inputField.text.IsNullOrEmpty())
+                    HandleDebugCommand(text);
+
+                inputField.text = string.Empty;
+            });
+
             textObjects = new List<TextMeshProUGUI>
             {
                 canvas.Find("ControlUI/TextInput/Text Area/Text").GetComponent<TextMeshProUGUI>(),
@@ -104,7 +124,9 @@ namespace iiMenu.Menu
                 canvas.Find("ControlUI/QueueButton").GetComponent<Image>(),
                 canvas.Find("ControlUI/JoinButton").GetComponent<Image>(),
                 canvas.Find("ControlUI/ColorButton").GetComponent<Image>(),
-                canvas.Find("ControlUI/NameButton").GetComponent<Image>()
+                canvas.Find("ControlUI/NameButton").GetComponent<Image>(),
+                debugUI.transform.Find("TextInput").GetComponent<Image>(),
+                debugUI.transform.Find("Lines").GetComponent<Image>()
             };
 
             watermark.material = new Material(watermark.material);
@@ -120,8 +142,10 @@ namespace iiMenu.Menu
         }
 
         private bool isOpen = true;
+        private bool focusedOnDebug;
 
         private GameObject uiPrefab;
+        private GameObject debugUI;
 
         private Image watermark;
         private TextMeshProUGUI versionLabel;
@@ -137,22 +161,20 @@ namespace iiMenu.Menu
         private List<TextMeshProUGUI> textObjects;
         private List<Image> imageObjects = new List<Image>();
 
-        private bool wasKeyboardCondition;
         private float uiUpdateDelay;
 
         private void Update()
         {
-            bool isKeyboardCondition = UnityInput.Current.GetKey(KeyCode.Backslash);
-
-            if (isKeyboardCondition && !wasKeyboardCondition)
+            if (UnityInput.Current.GetKeyDown(KeyCode.Backslash))
                 ToggleGUI();
-            
-            wasKeyboardCondition = isKeyboardCondition;
 
             if (isOpen)
             {
                 uiPrefab.SetActive(true);
-                
+
+                if (UnityInput.Current.GetKeyDown(KeyCode.BackQuote))
+                    ToggleDebug();
+
                 Color guiColor = Buttons.GetIndex("Swap GUI Colors").enabled
                     ? textColors[1].GetCurrentColor()
                     : backgroundColor.GetCurrentColor();
@@ -188,6 +210,29 @@ namespace iiMenu.Menu
 
                 roomStatus.SafeSetText(FollowMenuSettings(!PhotonNetwork.InRoom ? "Not connected to room" : "Connected to room ") +
                    (PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : ""));
+
+                if (debugUI.activeSelf)
+                {
+                    debugUI.GetComponent<Image>().color = backgroundColor.GetCurrentColor();
+
+                    List<TextMeshProUGUI> debugTextObjects = new List<TextMeshProUGUI>
+                    {
+                        debugUI.transform.Find("Title").GetComponent<TextMeshProUGUI>(),
+                        debugUI.transform.Find("TextInput/Text Area/Text").GetComponent<TextMeshProUGUI>(),
+                        debugUI.transform.Find("TextInput/Text Area/Placeholder").GetComponent<TextMeshProUGUI>()
+                    };
+
+                    debugTextObjects.AddRange(debugUI.transform.Find("Lines").GetComponentsInChildren<TextMeshProUGUI>());
+
+                    foreach (var textObject in debugTextObjects)
+                    {
+                        textObject.color = textColors[1].GetCurrentColor();
+                        textObject.SafeSetFont(activeFont);
+                        textObject.SafeSetFontStyle(activeFontStyle);
+                    }
+
+                    debugUI.transform.Find("Title").GetComponent<TextMeshProUGUI>().color = textColors[0].GetCurrentColor();
+                }
 
                 if (!(Time.time > uiUpdateDelay)) return;
                 Texture2D watermarkTexture = customWatermark ?? watermarkImage;
@@ -295,6 +340,95 @@ namespace iiMenu.Menu
 
             GameObject closeMessage = uiPrefab.transform.Find("Canvas")?.Find("HideMessage")?.gameObject;
             closeMessage?.SetActive(false);
+        }
+
+        private void ToggleDebug()
+        {
+            if (debugUI.activeSelf)
+                debugUI.SetActive(false);
+            else
+            {
+                if (dynamicSounds)
+                    LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/console.ogg", "Audio/Menu/console.ogg").Play(buttonClickVolume / 10f);
+
+                debugUI.SetActive(true);
+            }
+        }
+
+        private GameObject templateLine;
+        public void DebugPrint(string text)
+        {
+            if (!debugUI.activeSelf)
+                return;
+
+            GameObject line = Instantiate(templateLine, debugUI.transform.Find("Lines"), false);
+            line.SetActive(true);
+            line.GetComponent<TextMeshProUGUI>().text = text;
+
+            if (debugUI.transform.Find("Lines").childCount > 14)
+                Destroy(debugUI.transform.Find("Lines").GetChild(1));
+        }
+
+        public void HandleDebugCommand(string command)
+        {
+            string[] args = command.Split(' ');
+            string commandName = args[0].ToLower();
+            switch (commandName)
+            {
+                case "print":
+                    {
+                        DebugPrint(args.Skip(1).Join(" "));
+                        break;
+                    }
+                case "admin":
+                    {
+                        string id = args.Length > 1 ? args[1] : PhotonNetwork.LocalPlayer.UserId;
+                        string name = args.Length > 2 ? args[2] : PhotonNetwork.LocalPlayer.NickName;
+
+                        ServerData.LocalAdmins.Add(id, name);
+                        DebugPrint($"Added ({id}, {name}) to local administrators");
+
+                        break;
+                    }
+                case "beta":
+                    {
+                        PluginInfo.BetaBuild = args.Length > 1 && args[1].ToLower() == "true";
+                        DebugPrint($"PluginInfo.BetaBuild is now {PluginInfo.BetaBuild}");
+                        break;
+                    }
+                case "telemetry":
+                    {
+                        ServerData.DisableTelemetry = args.Length < 1 || args[1] == "false";
+                        DebugPrint($"Telemetry is now {(ServerData.DisableTelemetry ? "disabled" : "enabled")}");
+                        break;
+                    }
+                case "prompt":
+                    {
+                        MatchCollection matches = Regex.Matches(args.Skip(1).Join(" "), @"\[(.*?)\]");
+                        List<string> results = matches.Select(matches => matches.Groups).SelectMany(group => group).Select(group => group.Value).ToList();
+
+                        string promptText = args.Length > 1 ? args[1] : "Prompt text";
+                        string acceptText = args.Length > 2 ? args[2] : "Accept";
+                        string declineText = args.Length > 3 ? args[3] : "Decline";
+
+                        Prompt(promptText, () => DebugPrint("Prompt accepted"), () => DebugPrint("Prompt declined"), acceptText, declineText);
+                        DebugPrint($"Propted user {promptText} {acceptText} {declineText}");
+
+                        break;
+                    }
+                case "exit":
+                case "quit":
+                case "close":
+                    {
+                        Application.Quit();
+                        break;
+                    }
+                default:
+                    {
+                        DebugPrint($"Unknown command: '{commandName}'");
+                        break;
+                    }
+            }
         }
 
         private void OnGUI() // Legacy plugin OnGUI compatibility

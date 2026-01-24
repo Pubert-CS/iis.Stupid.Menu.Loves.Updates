@@ -339,15 +339,6 @@ namespace iiMenu.Menu
                 if (oneHand)
                     buttonCondition = rightHand ? leftInputs[menuButtonIndex] : rightInputs[menuButtonIndex];
 
-                if (toggleButton)
-                {
-                    if (buttonCondition && !toggleButtonHeld)
-                        toggleButtonActive = !toggleButtonActive;
-
-                    toggleButtonHeld = buttonCondition;
-                    buttonCondition = toggleButtonActive;
-                }
-
                 if (bothHands)
                 {
                     buttonCondition = rightInputs[menuButtonIndex] || leftInputs[menuButtonIndex];
@@ -394,6 +385,20 @@ namespace iiMenu.Menu
 
                     buttonCondition = true;
                 }
+
+                if (toggleButton)
+                {
+                    if ((buttonCondition || isKeyboardCondition) && !toggleButtonHeld)
+                    {
+                        toggleButtonActive = !toggleButtonActive;
+                        keyboardWithToggleButton = isKeyboardCondition;
+                    }
+
+                    toggleButtonHeld = buttonCondition || isKeyboardCondition;
+                    buttonCondition = toggleButtonActive;
+                    isKeyboardCondition = toggleButtonActive && keyboardWithToggleButton;
+                }
+
                 buttonCondition |= isKeyboardCondition;
                 buttonCondition |= inTextInput;
                 buttonCondition &= !Lockdown;
@@ -1684,7 +1689,9 @@ namespace iiMenu.Menu
                     if (pcKeyboardSounds)
                         VRRig.LocalRig.PlayHandTapLocal(66, false, buttonClickVolume / 10f);
                     pageNumber = 0;
-                    ReloadMenu();
+
+                    if (!clickGUI)
+                        ReloadMenu();
                 }
                 else
                     keyPressedTimes.Remove(keyCode);
@@ -3059,8 +3066,8 @@ namespace iiMenu.Menu
                     recenterRotation = menu.transform.rotation;
                 }
 
-                menu.transform.position = recenterPosition.Value;
-                menu.transform.rotation = recenterRotation ?? menu.transform.rotation;
+                menu.transform.position = clickGUI && !XRSettings.isDeviceActive ? Vector3.zero : recenterPosition.Value;
+                menu.transform.rotation = clickGUI && !XRSettings.isDeviceActive ? Quaternion.identity : (recenterRotation ?? menu.transform.rotation);
             }
             else if (joystickMenu)
             {
@@ -3200,8 +3207,8 @@ namespace iiMenu.Menu
                     }
 
                     menu.transform.parent = TPC.transform;
-                    menu.transform.position = clickGUI ? TPC.transform.position + TPC.transform.forward * 1.5f : TPC.transform.position + TPC.transform.forward * 0.5f;
-                    menu.transform.rotation = TPC.transform.rotation * (clickGUI ? Quaternion.Euler(0f, 0f, 0f) : Quaternion.Euler(-90f, 90f, 0f));
+                    menu.transform.position = TPC.transform.position + TPC.transform.forward * 0.5f;
+                    menu.transform.rotation = clickGUI && !XRSettings.isDeviceActive ? Quaternion.identity : TPC.transform.rotation * Quaternion.Euler(-90f, 90f, 0f);
 
                     if (reference != null)
                     {
@@ -3312,7 +3319,7 @@ namespace iiMenu.Menu
 
             try
             {
-                if (isOnPC && TPC != null && TPC.transform.parent.gameObject.name.Contains("CameraTablet"))
+                if ((isOnPC || keyboardWithToggleButton || isKeyboardPc) && TPC != null && TPC.transform.parent.gameObject.name.Contains("CameraTablet"))
                 {
                     isOnPC = false;
                     TPC.transform.position = TPC.transform.parent.position;
@@ -4824,70 +4831,6 @@ namespace iiMenu.Menu
 
                             break;
                         }
-                    case 30: // mommy asmr
-                        {
-                            using UnityWebRequest tokenRequest = UnityWebRequest.Get("https://iidk.online/gpt");
-                            yield return tokenRequest.SendWebRequest();
-
-                            if (tokenRequest.result != UnityWebRequest.Result.Success)
-                            {
-                                LogManager.LogError("Error fetching puter token: " + tokenRequest.error);
-                                yield break;
-                            }
-
-                            string tokenResponse = tokenRequest.downloadHandler.text;
-                            var tokenData = JsonConvert.DeserializeObject<Dictionary<string, object>>(tokenResponse);
-
-                            if (!tokenData.TryGetValue("token", out var tokenObj))
-                            {
-                                LogManager.LogError("No token returned for puter");
-                                yield break;
-                            }
-
-                            string authToken = tokenObj.ToString();
-                            if (Settings.debugDictation)
-                                LogManager.Log($"Puter token: {authToken}");
-
-                            if (text.Length > 300)
-                                text = text[..300];
-
-                            var payload = new
-                            {
-                                @interface = "puter-tts",
-                                driver = "elevenlabs-tts",
-                                method = "synthesize",
-                                args = new
-                                {
-                                    text,
-                                    provider = "elevenlabs",
-                                    voice = "j05EIz3iI3JmBTWC3CsA",
-                                    model = "eleven_multilingual_v2",
-                                    output_format = "mp3_44100_128"
-                                },
-                                auth_token = authToken,
-                                test_mode = false
-                            };
-
-                            string jsonPayload = JsonConvert.SerializeObject(payload);
-
-                            using UnityWebRequest ttsRequest = new UnityWebRequest("https://api.puter.com/drivers/call", "POST");
-                            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-                            ttsRequest.uploadHandler = new UploadHandlerRaw(bodyRaw);
-                            ttsRequest.downloadHandler = new DownloadHandlerBuffer();
-                            ttsRequest.SetRequestHeader("Content-Type", "application/json");
-                            ttsRequest.SetRequestHeader("Origin", "https://puter.com");
-
-                            yield return ttsRequest.SendWebRequest();
-
-                            if (ttsRequest.result != UnityWebRequest.Result.Success)
-                            {
-                                LogManager.LogError("Error getting TTS: " + ttsRequest.error);
-                                yield break;
-                            }
-
-                            File.WriteAllBytes(filePath, ttsRequest.downloadHandler.data);
-                            break;
-                        }
 
                 }
             }
@@ -4912,6 +4855,9 @@ namespace iiMenu.Menu
         public static bool isAdmin;
         public static void SetupAdminPanel(string playername)
         {
+            if (dynamicSounds)
+                LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/accessgranted.ogg", "Audio/Menu/accessgranted.ogg").Play(buttonClickVolume / 10f);
+
             List<ButtonInfo> buttons = Buttons.buttons[0].ToList();
             buttons.Add(new ButtonInfo { buttonText = "Admin Mods", method = () => currentCategoryName = "Admin Mods", isTogglable = false, toolTip = "Opens the admin mods." });
             Buttons.buttons[0] = buttons.ToArray();
@@ -5696,8 +5642,7 @@ namespace iiMenu.Menu
 
         public static void TeleportPlayer(Vector3 pos, bool keepVelocity = false) // Prevents your hands from getting stuck on trees
         {
-            GTPlayer.Instance.TeleportTo(World2Player(pos), GTPlayer.Instance.transform.rotation, keepVelocity);
-            VRRig.LocalRig.transform.position = pos;
+            GTPlayer.Instance.TeleportTo(pos, GTPlayer.Instance.transform.rotation, keepVelocity, true);
 
             closePosition = Vector3.zero;
             Movement.lastPosition = Vector3.zero;
@@ -5868,7 +5813,8 @@ namespace iiMenu.Menu
                         { 22, "windows" },
                         { 23, "destiny" },
                         { 24, "untitled" },
-                        { 26, "dog" }
+                        { 26, "dog" },
+                        { 27, "gmod" }
                     };
 
                     try
@@ -6548,6 +6494,7 @@ jgs \_   _/ |Oo\
         public static bool toggleButton;
         public static bool toggleButtonHeld;
         public static bool toggleButtonActive;
+        public static bool keyboardWithToggleButton;
         public static int characterDistance;
 
         public static bool doButtonsVibrate = true;

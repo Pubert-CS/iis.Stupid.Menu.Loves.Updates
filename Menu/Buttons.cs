@@ -391,8 +391,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Disable Snowball Impact Effect", method = Overpowered.DisableSnowballImpactEffect, toolTip = "Disables the impact effect that people get when hit with snowballs."},
                 new ButtonInfo { buttonText = "Invisible Snowballs", enableMethod =() => Overpowered.InvisibleSnowballs = true, disableMethod =() => Overpowered.InvisibleSnowballs = false, toolTip = "Makes the snowballs invisible."},
-                new ButtonInfo { buttonText = "No Teleport Snowballs", enableMethod =() => Overpowered.NoTeleportSnowballs = true, disableMethod =() => Overpowered.NoTeleportSnowballs = false, toolTip = "Stops snowball mods from teleporting you." },
-                new ButtonInfo { buttonText = "No Delay Snowballs", enableMethod =() => Overpowered.NoDelaySnowballs = true, disableMethod =() => Overpowered.NoDelaySnowballs = false, toolTip = "Uses every form of snowball to lower the delay to 30 per second." }
+                new ButtonInfo { buttonText = "No Teleport Snowballs", enableMethod =() => Overpowered.NoTeleportSnowballs = true, disableMethod =() => Overpowered.NoTeleportSnowballs = false, toolTip = "Stops snowball mods from teleporting you." }
             },
 
             new[] { // Room Mods [6]
@@ -468,8 +467,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Oculus Report Menu <color=grey>[</color><color=green>X</color><color=grey>]</color>", method = Important.OculusReportMenu, toolTip = "Opens the Oculus report menu when holding <color=green>X</color>."},
 
                 new ButtonInfo { buttonText = "Accept TOS", method = Important.AcceptTOS, disableMethod =() => TOSPatches.enabled = false, toolTip = "Accepts the Terms of Service for you."},
-                new ButtonInfo { buttonText = "Bypass K-ID Restrictions", method =() => PermissionPatch.enabled = true, disableMethod =() => PermissionPatch.enabled = false, toolTip = "Bypasses the permission restrictions held by K-ID for underage users."},
-                new ButtonInfo { buttonText = "Redeem Shiny Rocks", method =() => CoroutineManager.instance.StartCoroutine(Important.RedeemShinyRocks()), isTogglable = false, toolTip = "Redeems the 500 Shiny Rocks K-ID gives you."},
+                new ButtonInfo { buttonText = "Bypass K-ID Restrictions", overlapText = "Bypass k-ID Restrictions", method =() => PermissionPatch.enabled = true, disableMethod =() => PermissionPatch.enabled = false, toolTip = "Bypasses the permission restrictions held by k-ID for underage users."},
+                new ButtonInfo { buttonText = "Redeem Shiny Rocks", method =() => CoroutineManager.instance.StartCoroutine(Important.RedeemShinyRocks()), isTogglable = false, toolTip = "Redeems the 500 Shiny Rocks k-ID gives you."},
 
                 new ButtonInfo { buttonText = "Copy Player Position", method = Important.CopyPlayerPosition, isTogglable = false, toolTip = "Copies the current player position to the clipboard." },
 
@@ -518,6 +517,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Connect to US", method =() => Important.ConnectToRegion("us"), toolTip = "Connects you to the United States servers."},
                 new ButtonInfo { buttonText = "Connect to US West", method =() => Important.ConnectToRegion("usw"), toolTip = "Connects you to the western United States servers."},
                 new ButtonInfo { buttonText = "Connect to EU", method =() => Important.ConnectToRegion("eu"), toolTip = "Connects you to the Europe servers."},
+
+                new ButtonInfo { buttonText = "Reauthenticate", method = MothershipAuthenticator.Instance.BeginLoginFlow, isTogglable = false, toolTip = "Restarts the login flow that happens at the beginning of the game."},
             },
 
             new[] { // Safety Mods [8]
@@ -913,6 +914,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "FPS Name Tags", method = Visuals.FPSTags, disableMethod = Visuals.DisableFPSTags, toolTip = "Gives players name tags above their heads that show their FPS."},
                 new ButtonInfo { buttonText = "ID Name Tags", method = Visuals.IDTags, disableMethod = Visuals.DisableIDTags, toolTip = "Gives players name tags above their heads that show their ID."},
                 new ButtonInfo { buttonText = "Platform Name Tags", method = Visuals.PlatformTags, disableMethod = Visuals.DisablePlatformTags, toolTip = "Gives players name tags above their heads that show what platform they're playing on."},
+                new ButtonInfo { buttonText = "k-ID Name Tags", method = Visuals.KIDNameTags, disableMethod = Visuals.DisableKIDNameTags, toolTip = "Gives players name tags above their heads that show if they have k-ID restrictions."},
                 new ButtonInfo { buttonText = "Creation Date Name Tags", method = Visuals.CreationDateTags, disableMethod = Visuals.DisableCreationDateTags, toolTip = "Gives players name tags above their heads that show their creation date."},
                 new ButtonInfo { buttonText = "Ping Name Tags", method = Visuals.PingTags, disableMethod = Visuals.DisablePingTags, toolTip = "Gives players name tags above their heads that show their ping."},
                 new ButtonInfo { buttonText = "Turn Name Tags", method = Visuals.TurnTags, disableMethod = Visuals.DisableTurnTags, toolTip = "Gives players name tags above their heads that show their turn settings."},
@@ -1032,9 +1034,6 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Confuse Player Gun", method = Movement.ConfusePlayerGun, toolTip = "Makes whoever your hand desires look like they're going crazy by splashing water on their screen."},
                 new ButtonInfo { buttonText = "Confuse All Players", enableMethod = Movement.ConfuseAllPlayers, method = Movement.ConfuseAllPlayersSplash, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Splashes water on everyone's screens, making them look like they're going crazy."},
-                
-                new ButtonInfo { buttonText = "Pride Gun", overlapText = "Rainbow Gun", method = Fun.RainbowGun, toolTip = "Makes whoever your hand desires rainbow. This mod is client-sided."},
-                new ButtonInfo { buttonText = "Pride All", overlapText = "Rainbow All", method = Fun.RainbowAll, toolTip = "Makes everyone rainbow. This mod is client-sided."},
 
                 new ButtonInfo { buttonText = "Tinnitus Gun", method = Movement.TinnitusGun, disableMethod = Movement.DisableTinnitus, toolTip = "Plays high pitched noises for whoever your hand desires."},
                 new ButtonInfo { buttonText = "Tinnitus All", enableMethod = Movement.TinnitusAll, disableMethod = Movement.DisableTinnitus, toolTip = "Plays high pitched noises for everyone in the room."},
@@ -1101,7 +1100,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Narrate Text", method =() => PromptText("What would you like to be narrated?", () => SpeakText(keyboardInput), null, "Done", "Cancel"), isTogglable = false, toolTip = "Narrates the text of your desire."},
                 new ButtonInfo { buttonText = "Save Narration", method =() => PromptText("What would you like the narration to say?", () => Fun.SaveNarration(keyboardInput)), isTogglable = false, toolTip = "Saves whatever you want to narrate to your soundboard."},
-                new ButtonInfo { buttonText = "Mask Voice", enableMethod = Fun.MaskVoice, method =() => { Settings.CheckFocus(); GorillaTagger.Instance.myRecorder.IsRecording = Sound.AudioIsPlaying; }, disableMethod = Fun.DisableMaskVoice, toolTip = "Masks your voice with a TTS bot."},
+                new ButtonInfo { buttonText = "Mask Voice", enableMethod = Fun.MaskVoice, method =() => { Settings.CheckFocus(); GorillaTagger.Instance.myRecorder.IsRecording = Sound.AudioIsPlaying; }, disableMethod = Fun.DisableMaskVoice, toolTip = "Masks your voice with a TTS voice."},
 
                 new ButtonInfo { buttonText = "Disable Pitch Scaling", method = Important.DisablePitchScaling, disableMethod = Important.EnablePitchScaling, toolTip = "Disables the pitch effects on players' voices when they are a different scale."},
                 new ButtonInfo { buttonText = "Disable Mouth Movement", method = Important.DisableMouthMovement, disableMethod = Important.EnableMouthMovement, toolTip = "Disables your mouth from moving."},
@@ -1834,8 +1833,23 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "End Shift", method = Fun.EndShift, isTogglable = false, toolTip = "Ends the current ghost reactor shift."},
                 new ButtonInfo { buttonText = "Set Quota", method = Fun.SetQuota, toolTip = "Meets the quota for you."},
 
+                new ButtonInfo { buttonText = "Virtual Stump Kick Gun", method = Overpowered.VirtualStumpKickGun, toolTip = "Kicks whoever your hand desires in the virtual stump."},
+                new ButtonInfo { buttonText = "Virtual Stump Kick All", method = Overpowered.VirtualStumpKickAll, toolTip = "Kicks everyone in the virtual stump."},
+
+                new ButtonInfo { buttonText = "Virtual Stump Crash Gun", method = Overpowered.VirtualStumpCrashGun, toolTip = "Crashes whoever your hand desires in the virtual stump."},
+                new ButtonInfo { buttonText = "Virtual Stump Crash All", method = Overpowered.VirtualStumpCrashAll, toolTip = "Crashes everyone in the virtual stump."},
+                
                 new ButtonInfo { buttonText = "Ghost Reactor Freeze Gun", method = Fun.GhostReactorFreezeGun, toolTip = "Freezes whoever your hand desires in the ghost reactor."},
                 new ButtonInfo { buttonText = "Ghost Reactor Freeze All", method = Fun.GhostReactorFreezeAll, toolTip = "Freezes everyone in the ghost reactor."},
+
+                new ButtonInfo { buttonText = "Ghost Reactor Crash Gun", method = Overpowered.GhostReactorCrashGun, toolTip = "Crashes whoever your hand desires in the ghost reactor."},
+                new ButtonInfo { buttonText = "Ghost Reactor Crash All", method = Overpowered.GhostReactorCrashAll, toolTip = "Crashes everyone in the ghost reactor."},
+
+                new ButtonInfo { buttonText = "Super Infection Crash Gun", method = Overpowered.SuperInfectionCrashGun, toolTip = "Crashes whoever your hand desires in the Super Infection gamemode."},
+                new ButtonInfo { buttonText = "Super Infection Crash All", method = Overpowered.SuperInfectionCrashAll, toolTip = "Crashes everyone in the Super Infection gamemode."},
+
+                new ButtonInfo { buttonText = "Super Infection Break Audio Gun", method = Overpowered.SuperInfectionBreakAudioGun, toolTip = "Breaks the audio of whoever your hand desires in the Super Infection gamemode."},
+                new ButtonInfo { buttonText = "Super Infection Break Audio All", method = Overpowered.SuperInfectionBreakAudioAll, toolTip = "Breaks the audio of everyone in the Super Infection gamemode."},
 
                 new ButtonInfo { buttonText = "Kill Self", method =() => Fun.SetStateSelf(1), isTogglable = false, toolTip = "Turns you into a ghost."},
                 new ButtonInfo { buttonText = "Kill Gun", method =() => Fun.SetStateGun(1), toolTip = "Turns whoever your hand desires into a ghost."},
@@ -1997,36 +2011,6 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Kick Master Client", method = Overpowered.KickMasterClient, disableMethod =() => Overpowered.OptimizeEvents = false, toolTip = "Kicks the master client from the room." },
 
-                new ButtonInfo { buttonText = "Ghost Reactor Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.GhostReactor.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the Ghost Reactor map."},
-
-                new ButtonInfo { buttonText = "Ghost Reactor Kick Gun", method = Overpowered.GhostReactorKickGun, toolTip = "Kicks whoever your hand desires in the Ghost Reactor map as long as they are master client."},
-                new ButtonInfo { buttonText = "Ghost Reactor Kick All", method = Overpowered.GhostReactorKickAll, isTogglable = false, toolTip = "Kicks everyone above you on the leaderboard in the Ghost Reactor map."},
-                new ButtonInfo { buttonText = "Ghost Reactor Set Master Client", method = Overpowered.GhostReactorKickAll, isTogglable = false, toolTip = "Kicks everyone above you on the leaderboard in the Ghost Reactor map to make you master client."},
-
-                new ButtonInfo { buttonText = "Ghost Reactor Crash Gun", method = Overpowered.GhostReactorCrashGun, toolTip = "Crashes whoever your hand desires in the ghost reactor."},
-                new ButtonInfo { buttonText = "Ghost Reactor Crash All", method = Overpowered.GhostReactorCrashAll, toolTip = "Crashes everyone in the ghost reactor."},
-
-                new ButtonInfo { buttonText = "Super Infection Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the Super Infection gamemode."},
-
-                new ButtonInfo { buttonText = "Super Infection Kick Gun", method = Overpowered.SuperInfectionKickGun, toolTip = "Kicks whoever your hand desires in the Super Infection gamemode as long as they are master client."},
-                new ButtonInfo { buttonText = "Super Infection Kick All", method = Overpowered.SuperInfectionKickAll, isTogglable = false, toolTip = "Kicks everyone above you on the leaderboard in the Super Infection gamemode."},
-                new ButtonInfo { buttonText = "Super Infection Set Master Client", method = Overpowered.SuperInfectionKickAll, isTogglable = false, toolTip = "Kicks everyone above you on the leaderboard in the Super Infection gamemode to make you master client."},
-
-                new ButtonInfo { buttonText = "Super Infection Crash Gun", method = Overpowered.SuperInfectionCrashGun, toolTip = "Crashes whoever your hand desires in the Super Infection gamemode."},
-                new ButtonInfo { buttonText = "Super Infection Crash All", method = Overpowered.SuperInfectionCrashAll, toolTip = "Crashes everyone in the Super Infection gamemode."},
-
-                new ButtonInfo { buttonText = "Super Infection Break Audio Gun", method = Overpowered.SuperInfectionBreakAudioGun, toolTip = "Breaks the audio of whoever your hand desires in the Super Infection gamemode."},
-                new ButtonInfo { buttonText = "Super Infection Break Audio All", method = Overpowered.SuperInfectionBreakAudioAll, toolTip = "Breaks the audio of everyone in the Super Infection gamemode."},
-
-                new ButtonInfo { buttonText = "Virtual Stump Kick Master Client", method =() => Overpowered.GameEntityKickMaster(ManagerRegistry.SuperInfection.GameEntityManager), isTogglable = false, toolTip = "Kicks the master client in the virtual stump."},
-
-                new ButtonInfo { buttonText = "Virtual Stump Kick Gun", method = Overpowered.VirtualStumpKickGun, toolTip = "Kicks whoever your hand desires in the virtual stump."},
-                new ButtonInfo { buttonText = "Virtual Stump Kick All", method = Overpowered.VirtualStumpKickAll, toolTip = "Kicks everyone in the virtual stump."},
-                new ButtonInfo { buttonText = "Virtual Stump Set Master Client", method = Overpowered.VirtualStumpMasterKickAll, isTogglable = false, toolTip = "Kicks everyone in the virtual stump to make you master client."},
-
-                new ButtonInfo { buttonText = "Virtual Stump Crash Gun", method = Overpowered.VirtualStumpCrashGun, toolTip = "Crashes whoever your hand desires in the virtual stump."},
-                new ButtonInfo { buttonText = "Virtual Stump Crash All", method = Overpowered.VirtualStumpCrashAll, toolTip = "Crashes everyone in the virtual stump."},
-
                 new ButtonInfo { buttonText = "Delay Ban Gun", method = Overpowered.DelayBanGun, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod = Overpowered.DelayBanAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},
 
@@ -2034,12 +2018,13 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Fling on Grab", method = Overpowered.FlingOnGrab, toolTip = "Flings the player when they grab you." },
                 new ButtonInfo { buttonText = "Kick on Grab", method =() => Overpowered.TowardsPositionOnGrab(new Vector3(-71.33718f, 101.4977f, -93.09029f)), toolTip = "Kicks the player when they grab you." },
                 new ButtonInfo { buttonText = "Crash on Grab", method =() => Overpowered.DirectionOnGrab(Vector3.one), toolTip = "Crashes the player when they grab you." },
-                new ButtonInfo { buttonText = "Destroy on Grab", method =() => Overpowered.TowardsPositionOnGrab(new Vector3(99999999.99999999f, -99999999.99999999f, 99999999.99999999f)), toolTip = "Destroys the player when they grab you." },
+                new ButtonInfo { buttonText = "Destroy on Grab", method =() => Overpowered.DirectionOnGrab(new Vector3(1f, -1f, 1f)), toolTip = "Destroys the player when they grab you." },
                 new ButtonInfo { buttonText = "Obliterate on Grab", method =() => Overpowered.DirectionOnGrab(Vector3.up), toolTip = "Obliterates the player when they grab you." },
                 new ButtonInfo { buttonText = "Towards Point on Grab Gun", method = Overpowered.TowardsPointOnGrab, disableMethod = Overpowered.DisableTowardsPointOnGrab, toolTip = "Sends the player to your target position when they grab you." },
 
-                new ButtonInfo { buttonText = "Freeze All <color=grey>[</color><color=green>T</color><color=grey>]</color>", enableMethod =() => NetworkSystem.Instance.OnPlayerLeft += Overpowered.FreezeAll_OnPlayerLeave, method = Overpowered.FreezeAll, disableMethod =() => NetworkSystem.Instance.OnPlayerLeft -= Overpowered.FreezeAll_OnPlayerLeave, toolTip = "Freezes everyone in the room when holding <color=green>trigger</color>." },
-                new ButtonInfo { buttonText = "Za Warudo <color=grey>[</color><color=green>T</color><color=grey>]</color>", enableMethod = Overpowered.ZaWarudo_enableMethod, method = Overpowered.ZaWarudo, disableMethod =() => NetworkSystem.Instance.OnPlayerLeft -= Overpowered.ZaWarudo_OnPlayerLeave, toolTip = "Freeze all, but with special effects." },
+                new ButtonInfo { buttonText = "Lag Server", method = Overpowered.LagServer, toolTip = "Lags the room when holding <color=green>trigger</color>." },
+                new ButtonInfo { buttonText = "Freeze Server", enableMethod =() => SerializePatch.OverrideSerialization = () => false, method = Overpowered.FreezeAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Freezes the room when holding <color=green>trigger</color>." },
+                new ButtonInfo { buttonText = "Za Warudo <color=grey>[</color><color=green>T</color><color=grey>]</color>", enableMethod = Overpowered.ZaWarudo_enableMethod, method = Overpowered.ZaWarudo, toolTip = "Freeze all, but with special effects." },
 
                 new ButtonInfo { buttonText = "Anti Report <color=grey>[</color><color=green>Fling</color><color=grey>]</color>", method = Overpowered.AntiReportFling, toolTip = "Flings whoever tries to report you."},
 
@@ -2083,6 +2068,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Elevator Kick All", method = Overpowered.ElevatorKickAll, isTogglable = false, toolTip = "Kicks everyone in the elevator."},
                 new ButtonInfo { buttonText = "Elevator Kick Aura", method = Overpowered.ElevatorKickAura, toolTip = "Kicks players nearby you if they are in the elevator."},
                 new ButtonInfo { buttonText = "Elevator Kick On Touch", method = Overpowered.ElevatorKickOnTouch, toolTip = "Kicks players you touch if they are in the elevator."},
+
+                new ButtonInfo { buttonText = "Kick All", enableMethod =() => SerializePatch.OverrideSerialization = () => false, method = Overpowered.KickAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Kicks everyone in the room." },
 
                 new ButtonInfo { buttonText = "Instant Party", method = Fun.InstantParty, toolTip = "Makes parties form instantly, instead of having to wait a couple of seconds." },
                 new ButtonInfo { buttonText = "Leave Party", method =() => FriendshipGroupDetection.Instance.LeaveParty(), isTogglable = false, toolTip = "Leaves the party, incase you can't pull off the string." },
@@ -2214,6 +2201,9 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Admin Mute Gun", method =() => Experimental.AdminEnableGun(true, "Mute Microphone"), toolTip = "Mutes whoever your hand desires if they're using the menu."},
                 new ButtonInfo { buttonText = "Admin Unmute Gun", method =() => Experimental.AdminEnableGun(false, "Mute Microphone"), toolTip = "Unmutes whoever your hand desires if they're using the menu."},
                 new ButtonInfo { buttonText = "Admin Stutter Voice Gun", method =() => { Experimental.AdminEnableGun(true, "Mute Microphone"); Experimental.AdminEnableGun(false, "Mute Microphone"); }, toolTip = "Stutters the voice of whoever your hand desires by muting and unmuting them if they're using the menu."},
+
+                new ButtonInfo { buttonText = "Admin Jumpscare Gun", method = Experimental.AdminJumpscareGun, toolTip = "Jumpscares whoever your hand desires if they're using the menu."},
+                new ButtonInfo { buttonText = "Admin Jumpscare All", method = Experimental.AdminJumpscareAll, isTogglable = false, toolTip = "Jumpscares everyone using the menu."},
 
                 new ButtonInfo { buttonText = "Admin Mute All <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Experimental.AdminMute, toolTip = "Mutes everyone while holding trigger."},
 
@@ -2536,9 +2526,6 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Detected Lag All", overlapText = "Lag All", method = Detected.LagAll, detected = true, toolTip = "Lags everyone in the room."},
                 new ButtonInfo { buttonText = "Detected Lag Aura", overlapText = "Lag Aura", method = Detected.LagAura, detected = true, toolTip = "Lags players nearby you."},
                 new ButtonInfo { buttonText = "Detected Lag On Touch", overlapText = "Lag On Touch", method = Detected.LagOnTouch, detected = true, toolTip = "Lags players that you touch."},
-                
-                new ButtonInfo { buttonText = "Detected Kick Gun", overlapText = "Kick Gun", method = Detected.KickGun, disableMethod =() => SerializePatch.OverrideSerialization = null, detected = true, toolTip = "Kicks whoever your hand desires."},
-                new ButtonInfo { buttonText = "Detected Kick All", overlapText = "Kick All", method = Detected.KickAll, disableMethod =() => SerializePatch.OverrideSerialization = null, detected = true, toolTip = "Kicks everyone in the room."},
 
                 new ButtonInfo { buttonText = "Detected Crash Gun", overlapText = "Crash Gun", method = Detected.CrashGun, detected = true, toolTip = "Crashes whoever your hand desires."},
                 new ButtonInfo { buttonText = "Detected Crash All", overlapText = "Crash All", method = Detected.CrashAll, detected = true, toolTip = "Crashes everyone in the room."},

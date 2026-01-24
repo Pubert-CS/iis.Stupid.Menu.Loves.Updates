@@ -675,43 +675,6 @@ namespace iiMenu.Mods
 
         public static float elapsedTime = Time.time;
 
-        public static void RainbowGun()
-        {
-            if (GetGunInput(false))
-            {
-                var GunData = RenderGun();
-                RaycastHit Ray = GunData.Ray;
-                if (gunLocked && lockTarget != null)
-                {
-                    Color rgb = Color.HSVToRGB(Time.frameCount / 180f % 1f, 1f, 1f);
-					lockTarget.mainSkin.material.color = rgb;
-                }
-				
-                if (GetGunInput(true))
-                {
-                    VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !gunTarget.IsLocal())
-                    {
-                        gunLocked = true;
-                        lockTarget = gunTarget;
-                    }
-                }
-            }
-            else
-            {
-                if (gunLocked)
-                    gunLocked = false;
-            }
-        }
-		
-        public static void RainbowAll()
-        {
-            Color rgb = Color.HSVToRGB(Time.frameCount / 180f % 1f, 1f, 1f);
-
-            foreach (VRRig vrrig in GorillaParent.instance.vrrigs.Where(rig => !rig.IsLocal()))
-				vrrig.mainSkin.material.color = rgb;
-        }
-
         private static bool wasTagged;
         public static void PreloadJumpscareData()
         {
@@ -1578,7 +1541,7 @@ namespace iiMenu.Mods
         public static void StartShift()
         {
             if (!NetworkSystem.Instance.IsMasterClient) { NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> You are not master client."); return; }
-            ManagerRegistry.GhostReactor.GhostReactorManager.RequestShiftStartAuthority(GhostReactor.instance.shiftManager.state == GhostReactorShiftManager.State.WaitingForFirstShiftStart);
+            ManagerRegistry.GhostReactor.GhostReactorManager.RequestShiftStartAuthority(GhostReactor.instance.shiftManager.GetState() == GhostReactorShiftManager.State.WaitingForFirstShiftStart);
             RPCProtection();
         }
 
@@ -1662,9 +1625,9 @@ namespace iiMenu.Mods
             GRPlayer GRPlayer = GRPlayer.Get(Target.ActorNumber);
             VRRig Rig = GetVRRigFromPlayer(Target);
 
-            int netId = ManagerRegistry.GhostReactor.GameEntityManager.CreateNetId();
+            int netId = ManagerRegistry.GhostReactor.GameEntityManager.CreateTypeNetId(Overpowered.ObjectByName["GhostReactorEnemyChaserArmored"]);
 
-            ManagerRegistry.GhostReactor.GameEntityManager.photonView.RPC("CreateItemRPC", Target, new[] { netId }, new[] { (int)ManagerRegistry.GhostReactor.GameEntityManager.zone }, new[] { Overpowered.ObjectByName["GhostReactorEnemyChaserArmored"] }, new[] { BitPackUtils.PackWorldPosForNetwork(Rig.transform.position) }, new[] { BitPackUtils.PackQuaternionForNetwork(Rig.transform.rotation) }, new[] { 0L });
+            ManagerRegistry.GhostReactor.GameEntityManager.photonView.RPC("CreateItemRPC", Target, new[] { netId }, new[] { (int)ManagerRegistry.GhostReactor.GameEntityManager.zone }, new[] { Overpowered.ObjectByName["GhostReactorEnemyChaserArmored"] }, new[] { BitPackUtils.PackWorldPosForNetwork(Rig.transform.position) }, new[] { BitPackUtils.PackQuaternionForNetwork(Rig.transform.rotation) }, new[] { 0L }, new[] { 0 });
 
             ManagerRegistry.GhostReactor.GhostReactorManager.gameAgentManager.photonView.RPC("ApplyBehaviorRPC", Target, new[] { netId }, new byte[] { 6 });
 
@@ -2001,7 +1964,8 @@ namespace iiMenu.Mods
             drec = new DictationRecognizer();
             drec.DictationResult += (text, confidence) =>
             {
-                LogManager.Log($"Dictation result: {text}");
+                if (Settings.debugDictation)
+                    LogManager.Log($"Dictation result: {text}");
                 NotificationManager.SendNotification($"<color=grey>[</color><color=green>VOICE</color><color=grey>]</color> {text}");
 
                 if (GorillaTagger.Instance.myRecorder != null)
