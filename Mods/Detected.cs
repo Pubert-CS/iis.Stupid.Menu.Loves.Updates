@@ -26,7 +26,6 @@ using iiMenu.Extensions;
 using iiMenu.Managers;
 using iiMenu.Menu;
 using iiMenu.Patches.Menu;
-using iiMenu.Utilities;
 using Photon.Pun;
 using Photon.Realtime;
 using System.Collections;
@@ -45,7 +44,7 @@ namespace iiMenu.Mods
         public static void EnterDetectedTab()
         {
             if (!allowDetected) { 
-                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/Notifications/danger.ogg", "Audio/Menu/Notifications/danger.ogg"), buttonClickVolume / 10f); 
+                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/danger.ogg", "Audio/Menu/danger.ogg"), buttonClickVolume / 10f); 
                 Prompt("The mods in this category are detected. <b>Unless you know what you're doing, you will get banned.</b> Are you sure you would like to continue?", 
                     () => { 
                         allowDetected = true; currentCategoryName = "Detected Mods";
