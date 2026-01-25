@@ -1944,7 +1944,7 @@ namespace iiMenu.Menu
             buttonText.spriteAsset = ButtonSpriteSheet;
 
             if (favorites.Contains(method.buttonText))
-                buttonText.text = $"    {buttonText.text}    <sprite name=\"Favorite\">";
+                targetButtonText = $"    {targetButtonText}    <sprite name=\"Favorite\">";
 
             buttonText.font = activeFont;
             buttonText.SafeSetText(targetButtonText);
@@ -5814,7 +5814,10 @@ namespace iiMenu.Menu
                         { 23, "destiny" },
                         { 24, "untitled" },
                         { 26, "dog" },
-                        { 27, "gmod" }
+                        { 27, "gmod" },
+                        { 28, "undo" },
+                        { 29, "hl1" },
+                        { 30, "mine" }
                     };
 
                     try
@@ -6181,6 +6184,7 @@ namespace iiMenu.Menu
         {
             Settings.Panic();
             CustomBoardManager.CustomBoardsEnabled = false;
+            CustomBoardManager.CustomBoardFonts = false;
 
             NetworkSystem.Instance.OnJoinedRoomEvent -= OnJoinRoom;
             NetworkSystem.Instance.OnReturnedToSinglePlayer -= OnLeaveRoom;
