@@ -883,7 +883,9 @@ namespace iiMenu.Mods
                         foreach (var line in GorillaScoreboardTotalUpdater.allScoreboardLines.Where(line => line.linePlayer == GetPlayerFromVRRig(gunTarget)))
                         {
                             muteDelay = Time.time + 0.5f;
-                            line.PressButton(!line.muteButton.isOn, GorillaPlayerLineButton.ButtonType.Mute);
+
+                            line.muteButton.isOn = !line.muteButton.isOn;
+                            line.PressButton(line.muteButton.isOn, GorillaPlayerLineButton.ButtonType.Mute);
                         }
                     }
                 }
@@ -893,13 +895,19 @@ namespace iiMenu.Mods
         public static void MuteAll()
         {
             foreach (var line in GorillaScoreboardTotalUpdater.allScoreboardLines.Where(line => !line.muteButton.isAutoOn))
+            {
+                line.muteButton.isOn = true;
                 line.PressButton(true, GorillaPlayerLineButton.ButtonType.Mute);
+            }
         }
 
         public static void UnmuteAll()
         {
             foreach (var line in GorillaScoreboardTotalUpdater.allScoreboardLines.Where(line => line.muteButton.isAutoOn))
+            {
+                line.muteButton.isOn = false;
                 line.PressButton(false, GorillaPlayerLineButton.ButtonType.Mute);
+            }
         }
 
         public static void ReportGun()
@@ -1861,7 +1869,13 @@ namespace iiMenu.Mods
                 return;
 
             if (RecorderPatch.enabled)
-                VoiceManager.Get().SamplingRate = samplingRate;
+            {
+                if (VoiceManager.Get().SamplingRate != samplingRate)
+                {
+                    VoiceManager.Get().SamplingRate = samplingRate; 
+                    VoiceManager.Get().RestartMicrophone();
+                }
+            }   
             else
             {
                 Recorder mic = GorillaTagger.Instance.myRecorder;
@@ -1914,7 +1928,7 @@ namespace iiMenu.Mods
                 
         }
 
-        public static void EchoMicrophone(bool echo)
+        public static void EchoMicrophone(bool status)
         {
             ButtonInfo button = Buttons.GetIndex("Legacy Microphone");
             if (button.enabled)
@@ -1924,17 +1938,127 @@ namespace iiMenu.Mods
                 return;
             }
 
-            if (echo)
+            if (status)
             {
-                VoiceManager.Get().PostProcess = buffer =>
+                int sampleRate = VoiceManager.Get().SamplingRate;
+                int samples = Mathf.Max(1, sampleRate / 4);
+                float[] delayedBuffer = new float[samples];
+                int index = 0;
+
+                if (!VoiceManager.Get().PostProcessors.ContainsKey("Echo"))
                 {
-                    int samples = 4000;
-                    for (int i = samples; i < buffer.Length; i++)
-                        buffer[i] += buffer[i - samples] * 0.5f;
-                };
+                    VoiceManager.Get().PostProcessors["Echo"] = buffer =>
+                    {
+                        for (int i = 0; i < buffer.Length; i++)
+                        {
+                            float delayed = delayedBuffer[index];
+                            float raw = buffer[i];
+                            float mix = raw + delayed * 0.5f;
+
+                            buffer[i] = Mathf.Clamp(mix, -1f, 1f);
+
+                            delayedBuffer[index] = mix;
+                            index = (index + 1) % samples;
+                        }
+                    };
+                }
             }
             else
-                VoiceManager.Get().PostProcess = null;
+            {
+                VoiceManager.Get().PostProcessors.Remove("Echo");
+            }
+        }
+
+        public static void GlitchyMicrophone(bool status)
+        {
+            ButtonInfo button = Buttons.GetIndex("Legacy Microphone");
+            if (button.enabled)
+            {
+                NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> You are using Legacy Microphone. This mod does not support using the old microphone system.");
+                button.enabled = false;
+                return;
+            }
+
+            if (status)
+            {
+                int rate = VoiceManager.Get().SamplingRate;
+                int repeatLength = Mathf.Max(1, rate / 2);
+                float[] history = new float[repeatLength];
+                int historyIndex = 0;
+
+                float[] repeatBuffer = new float[repeatLength];
+                int repeatIndex = 0;
+                int repeatsLeft = 0;
+
+                int samplesUntilNext = Random.Range(rate * 1, rate * 4);
+
+                VoiceManager.Get().PostProcessClip = true;
+                if (!VoiceManager.Get().PostProcessors.ContainsKey("Glitch"))
+                {
+                    VoiceManager.Get().PostProcessors["Glitch"] = buffer =>
+                    {
+                        for (int i = 0; i < buffer.Length; i++)
+                        {
+                            history[historyIndex] = buffer[i];
+                            historyIndex = (historyIndex + 1) % repeatLength;
+                            if (repeatsLeft > 0)
+                            {
+                                buffer[i] = repeatBuffer[repeatIndex];
+                                repeatIndex++;
+                                if (repeatIndex >= repeatLength)
+                                {
+                                    repeatIndex = 0;
+                                    repeatsLeft--;
+                                }
+                            }
+                            else
+                            {
+                                samplesUntilNext--;
+                                if (samplesUntilNext <= 0)
+                                {
+                                    for (int j = 0; j < repeatLength; j++)
+                                    {
+                                        int index = (historyIndex + j) % repeatLength;
+                                        repeatBuffer[j] = history[index];
+                                    }
+                                    repeatsLeft = Random.Range(1, 2);
+                                    repeatIndex = 0;
+                                    samplesUntilNext = Random.Range(rate * 1, rate * 4);
+                                }
+                            }
+                        }
+                    };
+                } 
+            }
+            else
+            {
+                VoiceManager.Get().PostProcessors.Remove("Glitch");
+            }
+        }
+
+        public static void LaggyMicrophone(bool status)
+        {
+            ButtonInfo button = Buttons.GetIndex("Legacy Microphone");
+            if (button.enabled)
+            {
+                NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> You are using Legacy Microphone. This mod does not support using the old microphone system.");
+                button.enabled = false;
+                return;
+            }
+
+            if (status)
+            {
+                if (!VoiceManager.Get().PostProcessors.ContainsKey("Lag"))
+                {
+                    VoiceManager.Get().PostProcessors["Lag"] = buffer =>
+                    {
+                        if (UnityEngine.Random.value < 0.25f)
+                            Array.Clear(buffer, 0, buffer.Length);
+                    };
+                }
+            }
+            else
+                VoiceManager.Get().PostProcessors.Remove("Lag");
         }
 
         public static void MuteMicrophone(bool mute)
@@ -2012,17 +2136,18 @@ namespace iiMenu.Mods
                         if (RecorderPatch.enabled)
                         {
                             SpeakerPatch.enabled = true;
-                            VoiceManager vm = VoiceManager.Get();
-                            if (vm.PostProcess == null)
+                            SpeakerPatch.targetSpeaker = lockTarget.gameObject.GetComponent<GorillaSpeakerLoudness>().speaker;
+                            if (!VoiceManager.Get().PostProcessors.ContainsKey("CopyVoice"))
                             {
-                                VoiceManager.Get().PostProcess = buffer =>
+                                VoiceManager.Get().PostProcessors["CopyVoice"] = buffer =>
                                 {
                                     for (int i = 0; i < buffer.Length && i < SpeakerPatch.frameOut.Buf.Length; i++)
                                     {
                                         buffer[i] = SpeakerPatch.frameOut.Buf[i];
                                     }
                                 };
-                            }  
+                            }
+
                         }
                         else
                         {
@@ -2064,7 +2189,7 @@ namespace iiMenu.Mods
 
                     factory?.Dispose();
 
-                    VoiceManager.Get().PostProcess = null;
+                    VoiceManager.Get().PostProcessors.Remove("CopyVoice");
 
                     SpeakerPatch.enabled = false;
 

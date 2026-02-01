@@ -739,7 +739,12 @@ namespace iiMenu.Menu
                     if (Sound.AudioIsPlaying)
                     {
                         if (Time.time > Sound.RecoverTime)
-                            Sound.StopAllSounds();
+                        {
+                            if (!RecorderPatch.enabled)
+                                Sound.StopAllSounds();
+                            else
+                                GorillaTagger.Instance.myRecorder.DebugEchoMode = false;
+                        }
                     }
                 }
                 catch { }

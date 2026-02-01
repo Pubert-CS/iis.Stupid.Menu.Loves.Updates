@@ -29,11 +29,13 @@ using iiMenu.Patches.Menu;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Voice.Unity;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 using static iiMenu.Menu.Main;
 using static iiMenu.Utilities.AssetUtilities;
 using static iiMenu.Utilities.FileUtilities;
@@ -43,6 +45,7 @@ namespace iiMenu.Mods
     public static class Sound
     {
         public static bool LoopAudio = false;
+        public static bool OverlapAudio = false;
         public static int BindMode;
         public static string Subdirectory = "";
         public static void LoadSoundboard(bool openCategory = true)
@@ -64,33 +67,62 @@ namespace iiMenu.Mods
             select new ButtonInfo
             {
                 buttonText = "SoundboardFolder" + FolderName.Hash(),
-                overlapText = $"<sprite name=\"Folder\">    {FolderName}    ",
+                overlapText = $"<sprite name=\"Folder\">  {FolderName}  ",
                 method = () => OpenFolder(folder[21..]),
                 isTogglable = false,
                 toolTip = "Opens the " + FolderName + " folder."
             });
 
             string[] files = Directory.GetFiles($"{PluginInfo.BaseDirectory}/Sounds" + Subdirectory);
+            if (!RecorderPatch.enabled || Buttons.GetIndex("Legacy Microphone").enabled)
+                NotificationManager.SendNotification($"<color=grey>[</color><color=red>WARNING</color><color=grey>]</color> You are using the legacy microphone system. Modern soundboard features will not be implemented.");
             foreach (string file in files)
             {
                 string fileName = file.Replace("\\", "/")[(21 + Subdirectory.Length)..];
-                if (BindMode > 0)
+                string soundName = RemoveFileExtension(fileName).Replace("_", " ");
+
+                if (RecorderPatch.enabled)
                 {
-                    string soundName = RemoveFileExtension(fileName).Replace("_", " ");
-                    bool enabled = enabledSounds.Contains(soundName);
-                    soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, method = () => PrepareBindAudio(file[14..]), disableMethod = StopAllSounds, enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
-                    
-                } else
-                {
-                    string soundName = RemoveFileExtension(fileName).Replace("_", " ");
-                    if (LoopAudio)
+                    var buttonInfo = new ButtonInfo
                     {
-                        bool enabled = enabledSounds.Contains(soundName);
-                        soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, enableMethod = () => PlayAudio(file[14..]), disableMethod = StopAllSounds, enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
+                        buttonText = "SoundboardSound" + soundName.Hash(),
+                        overlapText = soundName,
+                        toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone."
+                    };
+                    if (OverlapAudio)
+                    {
+                        buttonInfo.method = () => PlayAudio(file[14..]);
+                        buttonInfo.isTogglable = false;
                     }
                     else
-                        soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = RemoveFileExtension(fileName).Replace("_", " "), method = () => PlayAudio(file[14..]), isTogglable = false, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
+                    {
+                        buttonInfo.method = () => PlaySoundboardSound(file[14..], buttonInfo, LoopAudio, BindMode > 0);
+                        buttonInfo.disableMethod = () => StopSoundboardSound(buttonInfo);
+                    }
+
+                    soundButtons.Add(buttonInfo);
+                } else
+                {
+                    if (BindMode > 0)
+                    {
+                        bool enabled = enabledSounds.Contains(soundName);
+                        soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, method = () => PrepareBindAudio(file[14..]), disableMethod = StopAllSounds, enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
+
+                    }
+                    else
+                    {
+                        if (LoopAudio)
+                        {
+                            bool enabled = enabledSounds.Contains(soundName);
+                            soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, enableMethod = () => PlayAudio(file[14..]), disableMethod = StopAllSounds, enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
+                        }
+                        else
+                            soundButtons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = RemoveFileExtension(fileName).Replace("_", " "), method = () => PlayAudio(file[14..]), isTogglable = false, toolTip = "Plays \"" + RemoveFileExtension(fileName).Replace("_", " ") + "\" through your microphone." });
+                    }
                 }
+                
+
+                
             }
             soundButtons.Add(new ButtonInfo { buttonText = "Stop All Sounds", method = StopAllSounds, isTogglable = false, toolTip = "Stops all currently playing sounds." });
             soundButtons.Add(new ButtonInfo { buttonText = "Open Sound Folder", method = OpenSoundFolder, isTogglable = false, toolTip = "Opens a folder containing all of your sounds." });
@@ -200,6 +232,84 @@ namespace iiMenu.Mods
             }
         }
 
+        private static readonly Dictionary<ButtonInfo, Guid> activeSounds = new Dictionary<ButtonInfo, Guid>();
+
+        public static void PlaySoundboardSound(object file, ButtonInfo info, bool loopAudio, bool bind)
+        {
+            bool[] bindings = {
+                rightPrimary,
+                rightSecondary,
+                leftPrimary,
+                leftSecondary,
+                leftGrab,
+                rightGrab,
+                leftTrigger > 0.5f,
+                rightTrigger > 0.5f,
+                leftJoystickClick,
+                rightJoystickClick
+            };
+
+            AudioClip clip = null;
+            if (file is string filePath)
+                clip = LoadSoundFromFile(filePath);
+            else if (file is AudioClip audioClip)
+                clip = audioClip;
+
+            if (clip == null)
+                return;
+
+            bool shouldPlay = true;
+            if (bind && BindMode > 0)
+            {
+                bool bindPressed = bindings[BindMode - 1];
+                shouldPlay = bindPressed && !lastBindPressed; 
+                lastBindPressed = bindPressed;
+            }
+
+            GorillaTagger.Instance.myRecorder.DebugEchoMode = true;
+
+            if (shouldPlay && !activeSounds.ContainsKey(info))
+            {
+                if (RecorderPatch.enabled)
+                {
+                    Guid id = VoiceManager.Get().AudioClip(clip, false);
+                    activeSounds[info] = id;
+                }
+            }
+
+            var activeSoundIds = VoiceManager.Get().AudioClips.Select(c => c.Id).ToHashSet();
+            var finished = activeSounds.Where(kvp => !activeSoundIds.Contains(kvp.Value)).Select(kvp => kvp.Key).ToList();
+
+            foreach (var finishedInfo in finished)
+            {
+                activeSounds.Remove(finishedInfo);
+
+                if (loopAudio)
+                {
+                    Guid newId = VoiceManager.Get().AudioClip(clip, false);
+                    activeSounds[finishedInfo] = newId;
+                }
+                else
+                {
+                    finishedInfo.enabled = false;
+                    ReloadMenu();
+                }
+            }
+        }
+
+        public static void StopSoundboardSound(ButtonInfo info)
+        {
+            if (activeSounds != null)
+            {
+                if (activeSounds.ContainsKey(info))
+                {
+                    VoiceManager.Get().StopAudioClip(activeSounds[info]);
+                    activeSounds.Remove(info);
+                    ReloadMenu();
+                }
+
+            }
+        }
         public static void PlayAudio(string file)
         {
             if (PhotonNetwork.InRoom)
@@ -217,7 +327,11 @@ namespace iiMenu.Mods
             if (PhotonNetwork.InRoom)
             {
                 if (RecorderPatch.enabled)
-                    VoiceManager.Get().StopAudioClip();
+                {
+                    activeSounds.Clear();
+                    VoiceManager.Get().StopAudioClips();
+                    ReloadMenu();
+                }
                 else
                 {
                     GorillaTagger.Instance.myRecorder.SourceType = Recorder.InputSourceType.Microphone;
