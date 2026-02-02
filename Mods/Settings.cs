@@ -887,10 +887,29 @@ exit 0";
                 watchShell.transform.localPosition += new Vector3(0.025f, 0f, -0.035f);
             }
         }
+        public static void CheckWatchMenu()
+        {
+            if (watchTimer == 0)
+                watchTimer = Time.time + 10f;
 
+            if (leftJoystick.sqrMagnitude > 0.1f * 0.1f)
+            {
+                watchTimer = 0;
+                watchUsed = true;
+                return;
+            }
+
+            if (!watchUsed && Time.time >= watchTimer)
+            {
+                NotificationManager.SendNotification("<color=grey>[</color><color=purple>WATCH</color><color=grey>]</color> Seems that you got stuck using Watch Menu, automatically disabling..");
+                Toggle("Watch Menu");
+            }
+        }
         public static void WatchMenuOff()
         {
             watchMenu = false;
+            watchUsed = false;
+            watchTimer = 0;
             Object.Destroy(watchobject);
         }
 
@@ -4963,6 +4982,8 @@ exit 0";
 
             drec.DictationHypothesis += (text) =>
             {
+                if (AIManager.generating)
+                    return;
                 if (debugDictation)
                     LogManager.Log($"Hypothesis: {text}");
 

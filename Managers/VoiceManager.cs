@@ -32,8 +32,8 @@ namespace iiMenu.Managers
 {
     public class VoiceManager : IAudioReader<float>
     {
-        private int samplingRate = 16000;
-        private const int OutputRate = 16000;
+        private int samplingRate = 48000;
+        private int outputRate = 48000;
         private float gain = 1;
         private float pitch = 1f;
 
@@ -67,7 +67,11 @@ namespace iiMenu.Managers
             StartRecording(device);
         }
 
+        /// <summary>
+        /// A read-only list of AudioClips currently playing
+        /// </summary>
         public IReadOnlyList<Clip> AudioClips => audioClips.AsReadOnly();
+
         /// <summary>
         /// Gets or sets the microphone's recording status. This does not stop the pushed AudioClip from playing.
         /// </summary>
@@ -84,6 +88,15 @@ namespace iiMenu.Managers
         {
             get { return samplingRate; }
             set { samplingRate = value; RestartMicrophone(); }
+        }
+
+        /// <summary>
+        /// Gets or sets the output rate used for AudioClip samples.
+        /// </summary>
+        public int OutputRate
+        {
+            get { return outputRate; }
+            set { outputRate = value; RestartMicrophone(); }
         }
 
         /// <summary>
@@ -184,15 +197,18 @@ namespace iiMenu.Managers
             => StopRecording() && StartRecording(currentDevice);
 
         /// <summary>
-        /// Pushes an AudioClip into the output stream.
+        /// Pushes an <see cref="UnityEngine.AudioClip"/> into the output stream.
         /// </summary>
-        /// <param name="clip">AudioClip to play.</param>
+        /// <param name="clip"><see cref="UnityEngine.AudioClip"/> to play.</param>
         /// <param name="disableMicrophone">Whether to mute the microphone while the clip plays.</param>
-        /// <returns>System.Guid</returns>
+        /// <returns><see cref="System.Guid"/></returns>
         public Guid AudioClip(AudioClip clip, bool disableMicrophone = false)
         {
             if (clip == null)
                 return Guid.Empty;
+
+            if (clip.frequency != OutputRate)
+                clip = Resample(clip, OutputRate);
 
             int channels = clip.channels;
             float[] raw = new float[clip.samples * channels];
@@ -223,7 +239,7 @@ namespace iiMenu.Managers
                 Source = clip,
                 Samples = mono,
                 Position = 0f,
-                Step = clip.frequency / (float)samplingRate,
+                Step = clip.frequency / (float)OutputRate,
                 MuteMicrophone = disableMicrophone
             });
 
@@ -231,9 +247,56 @@ namespace iiMenu.Managers
         }
 
         /// <summary>
-        /// Stops the specified audio clip from playing.
+        /// Resamples the given <see cref="UnityEngine.AudioClip"/> to the specified sample rate.
         /// </summary>
-        /// <param name="id">The GUID of the audio clip to stop.</param>
+        /// <param name="source">The <see cref="UnityEngine.AudioClip"/> to be resampled.</param>
+        /// <param name="targetSampleRate">The desired sample rate for the resulting audio clip.</param>
+        /// <returns>A new <see cref="UnityEngine.AudioClip"/> containing the resampled audio data.</returns>
+
+        // this is pretty heavy, but the only fix I could think of for making clip length consistent.
+        public static AudioClip Resample(AudioClip source, int sampleRate)
+        {
+            if (source == null || source.frequency == sampleRate)
+                return source;
+
+            int channels = source.channels;
+            int sourceSamples = source.samples;
+
+            float[] sourceData = new float[sourceSamples * channels];
+            source.GetData(sourceData, 0);
+
+            int targetSamples = Mathf.CeilToInt(source.length * sampleRate);
+            float[] targetData = new float[targetSamples * channels];
+
+            float ratio = (float)(sourceSamples - 1) / (targetSamples - 1);
+
+            for (int i = 0; i < targetSamples; i++)
+            {
+                float srcIndex = i * ratio;
+                int index = Mathf.FloorToInt(srcIndex);
+                int next = Mathf.Min(index + 1, sourceSamples - 1);
+                float t = srcIndex - index;
+
+                for (int c = 0; c < channels; c++)
+                    targetData[i * channels + c] = Mathf.Lerp(sourceData[index * channels + c], sourceData[next * channels + c], t);
+            }
+
+            var resampled = UnityEngine.AudioClip.Create(
+                source.name,
+                targetSamples,
+                channels,
+                sampleRate,
+                false
+            );
+
+            resampled.SetData(targetData, 0);
+            return resampled;
+        }
+
+        /// <summary>
+        /// Stops the specified <see cref="UnityEngine.AudioClip"/> from playing.
+        /// </summary>
+        /// <param name="id">The GUID of the <see cref="UnityEngine.AudioClip"/> to stop.</param>
         public bool StopAudioClip(Guid id)
         {
             int index = audioClips.FindIndex(c => c.Id == id);
@@ -337,10 +400,17 @@ namespace iiMenu.Managers
                 var clip = audioClips[i];
 
                 int index = (int)clip.Position;
-                int nextIndex = index + 1;
 
+                if (index >= clip.Samples.Length)
+                {
+                    audioClips.RemoveAt(i);
+                    continue;
+                }
+
+                int nextIndex = index + 1;
                 if (nextIndex >= clip.Samples.Length)
                 {
+                    mixed += clip.Samples[index];
                     audioClips.RemoveAt(i);
                     continue;
                 }

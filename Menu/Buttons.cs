@@ -111,7 +111,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Physical Menu", enableMethod = Settings.PhysicalMenuOn, disableMethod = Settings.PhysicalMenuOff, toolTip = "Freezes the menu in world space."},
                 new ButtonInfo { buttonText = "Bark Menu", enableMethod =() => barkMenu = true, disableMethod =() => barkMenu = false, toolTip = "Allows you to spawn the menu similar to bark by banging on your chest."},
                 new ButtonInfo { buttonText = "Wrist Menu", enableMethod =() => wristMenu = true, disableMethod =() => wristMenu = false, toolTip = "Turns the menu into a weird wrist watch, click your hand to open it."},
-                new ButtonInfo { buttonText = "Watch Menu", enableMethod = Settings.WatchMenuOn, disableMethod = Settings.WatchMenuOff, toolTip = "Turns the menu into a watch, click your joystick to toggle, and move your joystick to select a mod."},
+                new ButtonInfo { buttonText = "Watch Menu", enableMethod = Settings.WatchMenuOn, method = Settings.CheckWatchMenu, disableMethod = Settings.WatchMenuOff, toolTip = "Turns the menu into a watch, click your joystick to toggle, and move your joystick to select a mod."},
                 new ButtonInfo { buttonText = "Shiny Menu", enableMethod =() => shinyMenu = true, disableMethod =() => shinyMenu = false, toolTip = "Makes the menu's textures use the old shader."},
                 new ButtonInfo { buttonText = "Transparent Menu", enableMethod =() => transparentMenu = true, disableMethod =() => transparentMenu = false, toolTip = "Makes the menu transparent."},
                 new ButtonInfo { buttonText = "Crystallize Menu", enableMethod =() => { crystallizeMenu = true; CustomBoardManager.BoardMaterial = CrystalMaterial; }, disableMethod =() => { crystallizeMenu = false ; CustomBoardManager.BoardMaterial = null; }, toolTip = "Turns the menu into crystals."},
@@ -742,9 +742,9 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Freeze Rig Body", method = Movement.FreezeRigBody, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Makes your body freeze on your rig, but not your hands and head."},
                 new ButtonInfo { buttonText = "Freeze Rig", method = Movement.FreezeRig, disableMethod =() => { VRRig.LocalRig.enabled = true; Movement.startPosition = null; }, toolTip = "Makes your body freeze on your rig, but not your hands and head."},
                 
-                new ButtonInfo { buttonText = "Paralyze Rig", method = Movement.ParalyzeRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes your arms from your rig. Credits to Expansion for the idea."},
+                new ButtonInfo { buttonText = "Paralyze Rig", method = Movement.ParalyzeRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes your arms from your rig."},
                 new ButtonInfo { buttonText = "Chicken Rig", method = Movement.ChickenRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Makes your rig look like a chicken."},
-                new ButtonInfo { buttonText = "Amputate Rig", method = Movement.AmputateRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes all of your limbs from your rig. Credits to Expansion for the idea."},
+                new ButtonInfo { buttonText = "Amputate Rig", method = Movement.AmputateRig, disableMethod =() => VRRig.LocalRig.enabled = true, toolTip = "Removes all of your limbs from your rig."},
                 new ButtonInfo { buttonText = "Decapitate Rig", enableMethod =() => TorsoPatch.VRRigLateUpdate += Movement.DecapitateRigUpdate, disableMethod =() => TorsoPatch.VRRigLateUpdate -= Movement.DecapitateRigUpdate, toolTip = "Removes the head from your rig."},
 
                 new ButtonInfo { buttonText = "Spin Rig Body", method =() => Movement.SetBodyPatch(true), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Makes your body spin around, but not your head."},
@@ -1100,10 +1100,10 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Low Pitch Microphone", method =() => Fun.SetMicrophonePitch(0.5f), disableMethod =() => Fun.SetMicrophonePitch(1f), toolTip = "Makes your microphone low pitched."},
                 new ButtonInfo { buttonText = "Very Low Pitch Microphone", method =() => Fun.SetMicrophonePitch(0.01f), disableMethod =() => Fun.SetMicrophonePitch(1f), toolTip = "Makes your microphone very very low pitched."},
 
-                new ButtonInfo { buttonText = "Reload Microphone", method = Fun.ReloadMicrophone, isTogglable = false,  toolTip = "Reloads / fixes your microphone."},
+                new ButtonInfo { buttonText = "Reload Microphone", overlapText = "Restart Microphone", method = Fun.ReloadMicrophone, isTogglable = false,  toolTip = "Restarts / fixes your microphone."},
 
                 new ButtonInfo { buttonText = "Microphone Feedback", method =() => Fun.SetDebugEchoMode(true), disableMethod =() => Fun.SetDebugEchoMode(false), toolTip = "Plays sound coming through your microphone back to your speakers."},
-                new ButtonInfo { buttonText = "Copy Voice Gun", method = Fun.CopyVoiceGun, toolTip = "Copies the voice of whoever your hand desires."},
+                new ButtonInfo { buttonText = "Copy Voice Gun", method = Fun.CopyVoiceGun, disableMethod = Fun.DisableCopyVoice, toolTip = "Copies the voice of whoever your hand desires."},
 
                 new ButtonInfo { buttonText = "Narrate Text", method =() => PromptText("What would you like to be narrated?", () => SpeakText(keyboardInput), null, "Done", "Cancel"), isTogglable = false, toolTip = "Narrates the text of your desire."},
                 new ButtonInfo { buttonText = "Save Narration", method =() => PromptText("What would you like the narration to say?", () => Fun.SaveNarration(keyboardInput)), isTogglable = false, toolTip = "Saves whatever you want to narrate to your soundboard."},
@@ -1574,6 +1574,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Run Rabbit Name Cycle", method =() => Fun.NameCycle(new[] { "RUN", "RABBIT" }), toolTip = "Sets your name on a loop to \"RUN\" and \"RABBIT\"." },
                 new ButtonInfo { buttonText = "Random Name Cycle", method = Fun.RandomNameCycle, toolTip = "Sets your name on a loop to a bunch of random characters." },
                 new ButtonInfo { buttonText = "Custom Name Cycle", enableMethod = Fun.EnableCustomNameCycle, method =() => Fun.NameCycle(Fun.names), toolTip = "Sets your name on a loop to whatever's in the file." },
+                new ButtonInfo { buttonText = "Animated Name", method = Fun.AnimatedName, disableMethod =() => { ChangeName(Fun.name); Fun.name = null;  }, toolTip = "Animates your current username." },
 
                 new ButtonInfo { buttonText = "Strobe Color", overlapText = "Flash Color", method = Fun.FlashColor, toolTip = "Makes your character flash." },
                 new ButtonInfo { buttonText = "Strobe Color", method = Fun.StrobeColor, toolTip = "Makes your character random colors." },
@@ -2016,7 +2017,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Guardian Crash Gun", method = Overpowered.GuardianCrashGun, toolTip = "Crashes whoever your hand desires." },
                 new ButtonInfo { buttonText = "Guardian Crash All <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.GuardianCrashAll, toolTip = "Crashes everyone in the room when holding <color=green>trigger</color>." },
 
-                new ButtonInfo { buttonText = "Kick Master Client", method = Overpowered.KickMasterClient, disableMethod =() => Overpowered.OptimizeEvents = false, toolTip = "Kicks the master client from the room." },
+                new ButtonInfo { buttonText = "Kick Master Client", enableMethod = () => CoroutineManager.instance.StartCoroutine(Overpowered.KickMasterClient()), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Kicks the master client from the room." },
 
                 new ButtonInfo { buttonText = "Delay Ban Gun", method = Overpowered.DelayBanGun, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod = Overpowered.DelayBanAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},
@@ -2030,7 +2031,8 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Towards Point on Grab Gun", method = Overpowered.TowardsPointOnGrab, disableMethod = Overpowered.DisableTowardsPointOnGrab, toolTip = "Sends the player to your target position when they grab you." },
 
                 new ButtonInfo { buttonText = "Lag Server", method = Overpowered.LagServer, toolTip = "Lags the room when holding <color=green>trigger</color>." },
-                new ButtonInfo { buttonText = "Freeze Server", enableMethod =() => SerializePatch.OverrideSerialization = () => false, method = Overpowered.FreezeServer, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Freezes the room when holding <color=green>trigger</color>." },
+                new ButtonInfo { buttonText = "Freeze Server", enableMethod =() => SerializePatch.OverrideSerialization = () => false, method =() => Overpowered.FreezeServer(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Freezes the room when holding <color=green>trigger</color>." },
+                new ButtonInfo { buttonText = "Crash Server", enableMethod =() => SerializePatch.OverrideSerialization = () => false, method =() => Overpowered.FreezeServer(0.1f, 40), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Crashes the room when holding <color=green>trigger</color>." },
                 new ButtonInfo { buttonText = "Za Warudo <color=grey>[</color><color=green>T</color><color=grey>]</color>", enableMethod = Overpowered.ZaWarudo_enableMethod, method = Overpowered.ZaWarudo, toolTip = "Freeze all, but with special effects." },
 
                 new ButtonInfo { buttonText = "Anti Report <color=grey>[</color><color=green>Fling</color><color=grey>]</color>", method = Overpowered.AntiReportFling, toolTip = "Flings whoever tries to report you."},

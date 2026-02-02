@@ -2162,7 +2162,9 @@ namespace iiMenu.Mods
 
                                 SpeakerPatch.targetSpeaker = lockTarget.gameObject.GetComponent<GorillaSpeakerLoudness>().speaker;
 
-                                RecorderPatch.enabled = false;
+                                RecorderPatch.enabled = !Buttons.GetIndex("Legacy Microphone").enabled;
+
+                                VoiceManager.Get().PostProcessors["CopyVoice"] = null;
 
                                 factory?.Dispose();
 
@@ -2187,17 +2189,22 @@ namespace iiMenu.Mods
                 {
                     gunLocked = false;
 
-                    factory?.Dispose();
-
-                    VoiceManager.Get().PostProcessors.Remove("CopyVoice");
-
-                    SpeakerPatch.enabled = false;
-
-                    Sound.FixMicrophone();
-
-                    RecorderPatch.enabled = !Buttons.GetIndex("Legacy Microphone").enabled;
+                    DisableCopyVoice();
                 }
             }
+        }
+
+        public static void DisableCopyVoice()
+        {
+            factory?.Dispose();
+
+            VoiceManager.Get().PostProcessors.Remove("CopyVoice");
+
+            SpeakerPatch.enabled = false;
+
+            Sound.FixMicrophone();
+
+            RecorderPatch.enabled = !Buttons.GetIndex("Legacy Microphone").enabled;
         }
 
         public static void SaveNarration(string text)
@@ -5879,6 +5886,21 @@ Piece Name: {gunTarget.name}";
                 names = File.ReadAllText($"{PluginInfo.BaseDirectory}/iiMenu_CustomNameCycle.txt").Split('\n');
             else
                 File.WriteAllText($"{PluginInfo.BaseDirectory}/iiMenu_CustomNameCycle.txt","YOUR\nTEXT\nHERE");
+        }
+
+        public static string name;
+        public static void AnimatedName()
+        {
+            if (!PhotonNetwork.InRoom)
+            {
+                ChangeName(name);
+                return;
+            }
+            if (string.IsNullOrEmpty(name))
+                name = PhotonNetwork.LocalPlayer.NickName;
+            int length = Mathf.Clamp((int)Mathf.PingPong(Time.time / 0.25f, name.Length) + 1, 1, name.Length);
+
+            ChangeName(name[..length]);
         }
 
         public static float colorChangerDelay;

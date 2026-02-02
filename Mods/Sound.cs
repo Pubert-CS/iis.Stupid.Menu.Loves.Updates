@@ -232,7 +232,7 @@ namespace iiMenu.Mods
             }
         }
 
-        private static readonly Dictionary<ButtonInfo, Guid> activeSounds = new Dictionary<ButtonInfo, Guid>();
+        private static Dictionary<ButtonInfo, (Guid id, AudioClip clip)> activeSounds = new Dictionary<ButtonInfo, (Guid id, AudioClip clip)>();
 
         public static void PlaySoundboardSound(object file, ButtonInfo info, bool loopAudio, bool bind)
         {
@@ -266,33 +266,35 @@ namespace iiMenu.Mods
                 lastBindPressed = bindPressed;
             }
 
-            GorillaTagger.Instance.myRecorder.DebugEchoMode = true;
+            // GorillaTagger.Instance.myRecorder.DebugEchoMode = true;
 
             if (shouldPlay && !activeSounds.ContainsKey(info))
             {
                 if (RecorderPatch.enabled)
                 {
                     Guid id = VoiceManager.Get().AudioClip(clip, false);
-                    activeSounds[info] = id;
+                    activeSounds[info] = (id, clip);
                 }
             }
 
-            var activeSoundIds = VoiceManager.Get().AudioClips.Select(c => c.Id).ToHashSet();
-            var finished = activeSounds.Where(kvp => !activeSoundIds.Contains(kvp.Value)).Select(kvp => kvp.Key).ToList();
+            var ids = VoiceManager.Get().AudioClips.Select(c => c.Id).ToHashSet();
+            var finished = activeSounds.Where(kvp => !ids.Contains(kvp.Value.id)).ToList();
 
-            foreach (var finishedInfo in finished)
+            foreach (var kvp in finished)
             {
+                ButtonInfo finishedInfo = kvp.Key;
+                AudioClip finishedClip = kvp.Value.clip;
                 activeSounds.Remove(finishedInfo);
 
                 if (loopAudio)
                 {
-                    Guid newId = VoiceManager.Get().AudioClip(clip, false);
-                    activeSounds[finishedInfo] = newId;
+                    Guid newId = VoiceManager.Get().AudioClip(finishedClip, false);
+                    activeSounds[finishedInfo] = (newId, finishedClip);
                 }
                 else
                 {
-                    finishedInfo.enabled = false;
-                    ReloadMenu();
+                    if (finishedInfo.enabled)
+                        Toggle(finishedInfo);
                 }
             }
         }
@@ -303,11 +305,9 @@ namespace iiMenu.Mods
             {
                 if (activeSounds.ContainsKey(info))
                 {
-                    VoiceManager.Get().StopAudioClip(activeSounds[info]);
+                    VoiceManager.Get().StopAudioClip(activeSounds[info].id);
                     activeSounds.Remove(info);
-                    ReloadMenu();
                 }
-
             }
         }
         public static void PlayAudio(string file)
@@ -328,9 +328,12 @@ namespace iiMenu.Mods
             {
                 if (RecorderPatch.enabled)
                 {
+                    if (activeSounds != null)
+                        foreach (ButtonInfo info in activeSounds.Keys)
+                            info.enabled = false;
                     activeSounds.Clear();
                     VoiceManager.Get().StopAudioClips();
-                    ReloadMenu();
+                    GorillaTagger.Instance.myRecorder.DebugEchoMode = false;
                 }
                 else
                 {
