@@ -689,7 +689,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Throw Controllers", method = Movement.ThrowControllers, toolTip = "Lets you throw your controllers with <color=green>X</color> or <color=green>A</color>."},
                 new ButtonInfo { buttonText = "Controller Flick", enableMethod = Movement.EnableControllerFlick, method = Movement.ControllerFlick, disableMethod = Movement.DisableControllerFlick, toolTip = "Flicks your controllers in a similar way to disconnecting them with <color=green>X</color> or <color=green>A</color>."},
 
-                new ButtonInfo { buttonText = "Uncap Arm Length", method =() => GTPlayer.Instance.maxArmLength = float.MaxValue, disableMethod =() => GTPlayer.Instance.maxArmLength = 1f, toolTip = "Removes the arm distance limit."},
+                new ButtonInfo { buttonText = "Uncap Arm Length", method =() => { GTPlayer.Instance.leftHand.maxArmLength = float.MaxValue; GTPlayer.Instance.rightHand.maxArmLength = float.MaxValue; }, disableMethod =() => { GTPlayer.Instance.leftHand.maxArmLength = 1; GTPlayer.Instance.rightHand.maxArmLength = 1; }, toolTip = "Removes the arm distance limit."},
                 new ButtonInfo { buttonText = "Steam Long Arms", method = Movement.EnableSteamLongArms, disableMethod = Movement.DisableSteamLongArms, toolTip = "Gives you long arms similar to override world scale."},
                 new ButtonInfo { buttonText = "Stick Long Arms", method = Movement.StickLongArms, toolTip = "Makes you look like you're using sticks."},
                 new ButtonInfo { buttonText = "Multiplied Long Arms", method = Movement.MultipliedLongArms, toolTip = "Gives you a weird version of long arms."},
@@ -2017,10 +2017,20 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Guardian Crash Gun", method = Overpowered.GuardianCrashGun, toolTip = "Crashes whoever your hand desires." },
                 new ButtonInfo { buttonText = "Guardian Crash All <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = Overpowered.GuardianCrashAll, toolTip = "Crashes everyone in the room when holding <color=green>trigger</color>." },
 
-                new ButtonInfo { buttonText = "Kick Master Client", enableMethod = () => CoroutineManager.instance.StartCoroutine(Overpowered.KickMasterClient()), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Kicks the master client from the room." },
+                new ButtonInfo { buttonText = "Kick Master Client", enableMethod = () => Overpowered.kickCoroutine = CoroutineManager.instance.StartCoroutine(Overpowered.KickMasterClient()), method =() => { if (Overpowered.kickCoroutine == null) Toggle("Kick Master Client"); }, disableMethod =() => { SerializePatch.OverrideSerialization = null; Overpowered.kickCoroutine = null; }, toolTip = "Kicks the master client from the room." },
+                new ButtonInfo { buttonText = "Kick Gun", method = Overpowered.KickGun, disableMethod =() => { SerializePatch.OverrideSerialization = null; Overpowered.kickCoroutine = null; }, toolTip = "Kicks the master client from the room." },
+                new ButtonInfo { buttonText = "Kick All", enableMethod = () => Overpowered.kickCoroutine = CoroutineManager.instance.StartCoroutine(Overpowered.KickAll()), method =() => { if (Overpowered.kickCoroutine == null) Toggle("Kick All"); }, disableMethod =() => { SerializePatch.OverrideSerialization = null; Overpowered.kickCoroutine = null; }, toolTip = "Kicks the master client from the room." },
+
+                new ButtonInfo { buttonText = "Spy Room", enableMethod =() => Overpowered.CreatePeerBase(), disableMethod =() => Overpowered.UnloadPeerBase(), toolTip = "Allows you to hear people whilst being disconnect from the room." },
+
+                new ButtonInfo { buttonText = "Grey Screen All", enableMethod = ()=> Overpowered.LowGravityEvent(true), disableMethod =() => Overpowered.LowGravityEvent(false), toolTip = "Makes everyone's screen grey." },
+                new ButtonInfo { buttonText = "Spaz Grey Screen All", method = ()=> Overpowered.SpazGreyScreen(), disableMethod =() => Overpowered.LowGravityEvent(false), toolTip = "Makes everyone's screen flash grey." },
 
                 new ButtonInfo { buttonText = "Delay Ban Gun", method = Overpowered.DelayBanGun, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod = Overpowered.DelayBanAll, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},
+
+                new ButtonInfo { buttonText = "Log Spam Gun", method = Overpowered.LogSpamGun, toolTip = "Fills whoever your hand desires' game console with text." },
+                new ButtonInfo { buttonText = "Log Spam All", method = Overpowered.LogSpamAll, toolTip = "Fills everyone's game console with text." },
 
                 new ButtonInfo { buttonText = "Force Grab", method = Overpowered.ForceGrab, toolTip = "Attempts to grab the hand of anyone who presses their grips." },
                 new ButtonInfo { buttonText = "Fling on Grab", method = Overpowered.FlingOnGrab, toolTip = "Flings the player when they grab you." },
@@ -2044,6 +2054,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Server Mute All", method = Overpowered.ServerMuteAll, toolTip = "Mutes everyone in the server."},
                 new ButtonInfo { buttonText = "Deafen Gun", method = Overpowered.DeafenGun, toolTip = "Makes whoever your hand deseries not be able to hear anyone else."},
+                new ButtonInfo { buttonText = "Deafen All", method = Overpowered.DeafenAll, toolTip = "Makes everyone not be able to hear anyone except you."},
 
                 new ButtonInfo { buttonText = "Anti Report <color=grey>[</color><color=green>Lag</color><color=grey>]</color>", method = Overpowered.AntiReportLag, toolTip = "Lags whoever tries to report you."},
 
