@@ -27,7 +27,6 @@ using GorillaLocomotion.Gameplay;
 using GorillaNetworking;
 using GorillaTagScripts;
 using GorillaTagScripts.VirtualStumpCustomMaps;
-using HarmonyLib;
 using iiMenu.Classes.Menu;
 using iiMenu.Extensions;
 using iiMenu.Managers;
@@ -44,9 +43,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 using static iiMenu.Menu.Main;
 using static iiMenu.Utilities.AssetUtilities;
 using static iiMenu.Utilities.GameModeUtilities;
@@ -1865,10 +1864,7 @@ namespace iiMenu.Mods
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true))
-                {
-                    int[] objectIds = ObjectByName.Select(element => element.Value).ToArray();
-                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, objectIds[Random.Range(0, objectIds.Length)], ManagerRegistry.GhostReactor.GameEntityManager));
-                }
+                    CoroutineManager.instance.StartCoroutine(DrawSmallDelay(NewPointer.transform.position, ObjectByName["GhostReactorCollectibleCore"], ManagerRegistry.GhostReactor.GameEntityManager));
             }
         }
 
@@ -6331,19 +6327,25 @@ namespace iiMenu.Mods
                 yield break;
             }
 
+            if (NetworkSystem.Instance.IsMasterClient)
+            {
+                kickCoroutine = null;
+                yield break;
+            }
+
             SerializePatch.OverrideSerialization = () => false;
 
             Player player = PhotonNetwork.MasterClient;
             VRRig rig = GetVRRigFromPlayer(PhotonNetwork.MasterClient);
             string name = $"<color=#{(rig != null ? ColorUtility.ToHtmlStringRGBA(rig.GetColor()) : "white")}>{player.NickName}</color>";
             NotificationManager.SendNotification($"<color=grey>[</color><color=purple>KICK</color><color=grey>]</color> Kicking {name}.");
-            int view = PhotonNetwork.AllocateViewID(0);
             float time;
-            PhotonNetwork.SendAllOutgoingCommands();
+            RPCProtection();
             kick:
             {
                 time = Time.time + 10f;
-                for (int i = 0; i < 3970; i++)
+                int view = PhotonNetwork.AllocateViewID(0);
+                for (int i = 0; i < 3965; i++)
                 {
                     PhotonNetwork.NetworkingClient.OpRaiseEvent(202, new Hashtable
                     {
@@ -6352,7 +6354,7 @@ namespace iiMenu.Mods
                         { 7, view }
                     }, new RaiseEventOptions
                     {
-                        TargetActors = new int[] { player.ActorNumber }
+                        Receivers = ReceiverGroup.MasterClient
                     }, SendOptions.SendReliable);
                 }
             }
@@ -6385,6 +6387,12 @@ namespace iiMenu.Mods
                 yield break;
             }
 
+            if (NetworkSystem.Instance.IsMasterClient)
+            {
+                kickCoroutine = null;
+                yield break;
+            }
+
             SerializePatch.OverrideSerialization = () => false;
 
             while (!PhotonNetwork.LocalPlayer.IsMasterClient)
@@ -6397,13 +6405,13 @@ namespace iiMenu.Mods
                 string name = $"<color=#{(rig != null ? ColorUtility.ToHtmlStringRGBA(rig.GetColor()) : "white")}>{player.NickName}</color>";
 
                 NotificationManager.SendNotification($"<color=grey>[</color><color=purple>KICK</color><color=grey>]</color> Kicking {name}.");
-                PhotonNetwork.SendAllOutgoingCommands();
-
+                RPCProtection();
                 float time;
                 kick:
                 {
                     time = Time.time + 10f;
-                    for (int i = 0; i < 3970; i++)
+                    int view = PhotonNetwork.AllocateViewID(0);
+                    for (int i = 0; i < 3965; i++)
                     {
                         PhotonNetwork.NetworkingClient.OpRaiseEvent(202, new Hashtable
                         {
@@ -6412,7 +6420,7 @@ namespace iiMenu.Mods
                             { 7, PhotonNetwork.AllocateViewID(0) }
                         }, new RaiseEventOptions
                         {
-                            TargetActors = new int[] { player.ActorNumber }
+                            Receivers = ReceiverGroup.MasterClient
                         }, SendOptions.SendReliable);
                     }
                 }
@@ -6431,10 +6439,14 @@ namespace iiMenu.Mods
                 if (!PhotonNetwork.InRoom)
                 {
                     NotificationManager.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Kicking {name} failed. :(");
+                    kickCoroutine = null;
+                    yield break;
                 }
 
-                NotificationManager.SendNotification($"<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> {name} has been kicked! Waiting 5 seconds to kick the next person..");
-                yield return new WaitForSeconds((Time.time - time) < 1f ? 10f : 5f);
+                int left = (Time.time - (time - 10f)) < 2.5f ? 10 : 5;
+
+                NotificationManager.SendNotification($"<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> {name} has been kicked! Waiting {left} seconds to kick the next person..");
+                yield return new WaitForSeconds(left);
 
             }
 
@@ -6454,7 +6466,7 @@ namespace iiMenu.Mods
 
         public static void KickGun()
         {
-            if (NetworkSystem.Instance.InRoom)
+            if (NetworkSystem.Instance.InRoom || !NetworkSystem.Instance.IsMasterClient)
                 Visuals.VisualizeAura(NetworkSystem.Instance.MasterClient.VRRig().transform.position, 0.15f, Color.blue, 2017928);
             if (GetGunInput(false))
             {
@@ -6478,6 +6490,32 @@ namespace iiMenu.Mods
             {
                 if (gunLocked)
                     gunLocked = false;
+            }
+        }
+
+        public static float lagMasterDelay;
+
+        public static void LagMasterClient()
+        {
+            if (NetworkSystem.Instance.IsMasterClient || !NetworkSystem.Instance.InRoom)
+                return;
+
+            if (Time.time > lagMasterDelay)
+            {
+                int view = PhotonNetwork.AllocateViewID(0);
+                for (int i = 0; i < 150; i++)
+                {
+                    PhotonNetwork.NetworkingClient.OpRaiseEvent(202, new Hashtable
+                    {
+                        { 0, "GameMode" },
+                        { 6, PhotonNetwork.ServerTimestamp },
+                        { 7, view }
+                    }, new RaiseEventOptions
+                    {
+                        Receivers = ReceiverGroup.MasterClient
+                    }, SendOptions.SendReliable);
+                }
+                lagMasterDelay = Time.time + 1f;
             }
         }
 
@@ -6515,7 +6553,57 @@ namespace iiMenu.Mods
             RoomSystem.SendEvent(11, groupJoinSendData, netEventOptions, false);
         }
 
-        public static void LowGravityEvent(bool status)
+        private static float greyZoneDelay;
+        public static void ActivateGreyZoneGun(bool status)
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                RaycastHit Ray = GunData.Ray;
+
+                if (GetGunInput(true))
+                {
+                    VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
+                    if (gunTarget && !gunTarget.IsLocal() && Time.time > greyZoneDelay)
+                    {
+                        greyZoneDelay = Time.time + 0.1f;
+                        ActivateGreyZone(status, gunTarget.GetPhotonPlayer());
+                    }
+                }
+            }
+        }
+
+        private static Coroutine wipeOverride;
+        public static IEnumerator ClearOverride()
+        {
+            yield return new WaitUntil(() => !PhotonNetwork.InRoom);
+            SerializePatch.OverrideSerialization = null;
+        }
+
+        public static void ActivateGreyZone(bool status, Player target)
+        {
+            if (!NetworkSystem.Instance.IsMasterClient)
+            {
+                NotificationManager.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> You are not master client.");
+                return;
+            }
+
+            SerializePatch.OverrideSerialization ??= () =>
+            {
+                MassSerialize(true, new[] { GreyZoneManager.Instance.photonView });
+                return false;
+            };
+
+            wipeOverride ??= CoroutineManager.instance.StartCoroutine(ClearOverride());
+
+            GreyZoneManager.Instance.greyZoneActive = status;
+            GreyZoneManager.Instance.photonConnectedDuringActivation = PhotonNetwork.InRoom;
+            GreyZoneManager.Instance.greyZoneActivationTime = (GreyZoneManager.Instance.photonConnectedDuringActivation ? PhotonNetwork.Time : ((double)Time.time));
+
+            SendSerialize(GreyZoneManager.Instance.photonView, new RaiseEventOptions { TargetActors = new[] { target.ActorNumber } });
+        }
+
+        public static void ActivateGreyZone(bool status)
         {
             if (NetworkSystem.Instance.InRoom)
             {
@@ -6537,12 +6625,23 @@ namespace iiMenu.Mods
 
         public static float spazGreyDelay;
         public static bool greyState;
-        public static void SpazGreyScreen() 
+        public static void SpazGreyZoneGun()
+        {
+            if (Time.time > spazGreyDelay)
+            {
+                greyState = !greyState;
+                spazGreyDelay = Time.time + 0.1f;
+            }
+
+            ActivateGreyZoneGun(greyState);
+        }
+
+        public static void SpazGreyZone() 
         { 
             if (Time.time > spazGreyDelay)
             {
                 greyState = !greyState;
-                LowGravityEvent(greyState);
+                ActivateGreyZone(greyState);
                 spazGreyDelay = Time.time + 0.1f;
             }
         }
