@@ -421,8 +421,8 @@ namespace iiMenu.Mods
 
         public static void WatchOn()
         {
-            GameObject mainwatch = VRRig.LocalRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.L/upper_arm.L/forearm.L/hand.L/huntcomputer (1)").gameObject;
-            regwatchobject = Object.Instantiate(mainwatch, rightHand ? VRRig.LocalRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.R/upper_arm.R/forearm.R/hand.R").transform : VRRig.LocalRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.L/upper_arm.L/forearm.L/hand.L").transform, false);
+            GameObject mainwatch = VRRig.LocalRig.transform.Find("rig/body_pivot/shoulder.L/upper_arm.L/forearm.L/hand.L/huntcomputer (1)").gameObject;
+            regwatchobject = Object.Instantiate(mainwatch, rightHand ? VRRig.LocalRig.transform.Find("rig/body_pivot/shoulder.R/upper_arm.R/forearm.R/hand.R").transform : VRRig.LocalRig.transform.Find("rig/body_pivot/shoulder.L/upper_arm.L/forearm.L/hand.L").transform, false);
             Object.Destroy(regwatchobject.GetComponent<GorillaHuntComputer>());
             regwatchobject.SetActive(true);
 
@@ -1374,7 +1374,7 @@ namespace iiMenu.Mods
                     SlingshotProjectile projectileInstance = projectileArray[index].projectileInstance;
                     if (projectileInstance == null || !projectileInstance.gameObject.activeSelf) continue;
 
-                    if (VRRig.LocalRig.GetSlingshot().dummyProjectile && VRRig.LocalRig.GetSlingshot().dummyProjectile.GetComponent<SlingshotProjectile>() == projectileInstance) continue;
+                    if ((VRRig.LocalRig.GetSlingshot() as Slingshot).dummyProjectile && (VRRig.LocalRig.GetSlingshot() as Slingshot).dummyProjectile.GetComponent<SlingshotProjectile>() == projectileInstance) continue;
 
                     if (!trajectoryPool.TryGetValue(projectileInstance, out LineRenderer Line))
                     {
@@ -1430,7 +1430,7 @@ namespace iiMenu.Mods
             {
                 if (rig.IsLocal()) continue;
 
-                Slingshot playerSlingshot = rig.GetSlingshot();
+                Slingshot playerSlingshot = rig.GetSlingshot() as Slingshot;
                 if (playerSlingshot != null)
                 {
                     if (playerSlingshot.InDrawingState() && playerSlingshot.dummyProjectile != null)
@@ -1495,7 +1495,7 @@ namespace iiMenu.Mods
                     localTrajectoryLine.gameObject.SetActive(false);
             }
 
-            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot();
+            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot() as Slingshot;
             if (localSlingshot == null || !localSlingshot.InDrawingState())
                 return;
 
@@ -3112,7 +3112,7 @@ namespace iiMenu.Mods
             try
             {
                 Transform HeadCosmetics = VRRig.LocalRig.mainCamera.transform.Find("HeadCosmetics");
-                Transform Head = VRRig.LocalRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body/head");
+                Transform Head = VRRig.LocalRig.transform.Find("rig/head");
                 foreach (GameObject Cosmetic in VRRig.LocalRig.cosmetics)
                 {
                     if (Cosmetic.activeSelf && (Cosmetic.transform.parent == HeadCosmetics || Cosmetic.transform.parent == Head))
@@ -3191,9 +3191,11 @@ namespace iiMenu.Mods
             Quaternion rightHandStartRot = rig.rightHand.rigTarget.localRotation;
 
             float startTime = Time.time;
-            while (Time.time < startTime + 0.1f)
+            float length = 1f / PhotonNetwork.SendRate;
+
+            while (Time.time < startTime + length)
             {
-                float t = (Time.time - startTime) / 0.1f;
+                float t = (Time.time - startTime) / length;
 
                 rig.head.rigTarget.localRotation = Quaternion.Lerp(headStartRot, rig.head.syncRotation, t);
 

@@ -3574,8 +3574,7 @@ namespace iiMenu.Mods
                         GrowingSnowball.snowballThrowEvent._eventId,
                         Pos,
                         Vel,
-                        GetProjectileIncrement(Pos, Vel, snowballScale),
-                        null // If this argument isn't here, the snowballs don't function. This has no sentimental value or checks besides the length check prohibiting even normal players from sending snowballs.
+                        GetProjectileIncrement(Pos, Vel, snowballScale)
                     }, options, new SendOptions
                     {
                         Reliability = false
@@ -5258,10 +5257,14 @@ namespace iiMenu.Mods
             }
         }
 
+        private static float closeRoomDelay;
         public static void CloseRoom()
         {
             if (!PhotonNetwork.InRoom) return;
-            
+            if (Time.time < closeRoomDelay) return;
+
+            closeRoomDelay = Time.time + 0.1f;
+
             for (int i = 0; i < 40; i++)
             {
                 WebFlags flags = new WebFlags(byte.MaxValue);
@@ -5435,9 +5438,7 @@ namespace iiMenu.Mods
         {
             string[] lagNames = {
                 "Party",
-                "VRRig",
-                "Destroy",
-                "GTSignal"
+                "Destroy"
             };
 
             if (positive)
@@ -5457,9 +5458,7 @@ namespace iiMenu.Mods
             return lagTypeIndex switch
             {
                 0 => true,
-                1 => true,
-                2 => false,
-                3 => false,
+                1 => false,
 
                 _ => true
             };
@@ -5490,12 +5489,10 @@ namespace iiMenu.Mods
                 };
                 string rpcName = lagTypeIndex switch
                 {
-                    1 => "RPC_UpdateCosmeticsWithTryonPacked",
                     _ => "AddPartyMembers"
                 };
                 object[] data = lagTypeIndex switch
                 {
-                    1 => new object[] { null, null, false },
                     _ => new object[] { "Infection", (short)12, null }
                 };
 
@@ -5529,26 +5526,22 @@ namespace iiMenu.Mods
 
                 byte eventIndex = lagTypeIndex switch
                 {
-                    3 => 204,
-                    _ => 186
+                    _ => 204
                 };
 
                 SendOptions sendOptions = lagTypeIndex switch
                 {
-                    3 => new SendOptions { Encrypt = true, Reliability = false, DeliveryMode = DeliveryMode.Unreliable },
-                    _ => SendOptions.SendUnreliable
+                    _ => new SendOptions { Encrypt = true, Reliability = false, DeliveryMode = DeliveryMode.Unreliable }
                 };
 
                 object data = lagTypeIndex switch
                 {
-                    3 => new object[] { float.NaN },
-                    _ => new Hashtable { { float.NaN, float.NaN } }
+                    _ => new object[] { float.NaN }
                 };
 
                 RaiseEventOptions raiseEventOptions = lagTypeIndex switch 
                 {
-                    3 => new RaiseEventOptions { CachingOption = EventCaching.DoNotCache },
-                    _ => new RaiseEventOptions { }
+                    _ => new RaiseEventOptions { CachingOption = EventCaching.DoNotCache }
                 };
 
                 switch (target)
@@ -5838,7 +5831,7 @@ namespace iiMenu.Mods
                 barrelAllDelay = Time.time + 0.3f;
         }
 
-        public const int BarrelIndex = 621;
+        public const int BarrelIndex = 618;
         public static void SendBarrelProjectile(Vector3 pos, Vector3 vel, Quaternion rot, RaiseEventOptions options = null, bool disableCooldown = false)
         {
             options ??= new RaiseEventOptions { Receivers = ReceiverGroup.All };
@@ -5874,9 +5867,8 @@ namespace iiMenu.Mods
 
                 Vector3 archivePosition = VRRig.LocalRig.transform.position;
 
-                SendSerialize(GorillaTagger.Instance.myVRRig.GetView, options, -50);
-
                 VRRig.LocalRig.transform.position = pos;
+                SendSerialize(GorillaTagger.Instance.myVRRig.GetView, options, -50);
                 SendSerialize(GorillaTagger.Instance.myVRRig.GetView, options);
 
                 vel = vel.ClampMagnitudeSafe(50f);
@@ -6577,6 +6569,8 @@ namespace iiMenu.Mods
         {
             yield return new WaitUntil(() => !PhotonNetwork.InRoom);
             SerializePatch.OverrideSerialization = null;
+
+            wipeOverride = null;
         }
 
         public static void ActivateGreyZone(bool status, Player target)

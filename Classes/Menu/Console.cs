@@ -111,7 +111,7 @@ namespace iiMenu.Classes.Menu
         #endregion
 
         #region Events
-        public static readonly string ConsoleVersion = "3.0.5";
+        public static readonly string ConsoleVersion = "3.0.6";
         public static Console instance;
 
         public void Awake()
@@ -1950,7 +1950,7 @@ namespace iiMenu.Classes.Menu
                         TargetAnchorObject = Rig.rightHandTransform.parent.gameObject;
                         break;
                     case 3:
-                        TargetAnchorObject = Rig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body").gameObject;
+                        TargetAnchorObject = Rig.transform.Find("rig/body_pivot").gameObject;
                         break;
                 }
 

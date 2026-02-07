@@ -508,8 +508,8 @@ namespace iiMenu.Mods
                         if (Vector3.Distance(target.transform.position, keyboardTransform.position) < 3f)
                         {
                             string handPath = (bool)args[1]
-                                ? "GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.L/upper_arm.L/forearm.L/hand.L/palm.01.L/f_index.01.L/f_index.02.L/f_index.03.L/f_index.03.L_end"
-                                : "GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.R/upper_arm.R/forearm.R/hand.R/palm.01.R/f_index.01.R/f_index.02.R/f_index.03.R/f_index.03.R_end";
+                                ? "rig/body_pivot/hand.L/palm.01.L/f_index.01.L/f_index.02.L/f_index.03.L/f_index.03.L_end"
+                                : "rig/body_pivot/hand.R/palm.01.R/f_index.01.R/f_index.02.R/f_index.03.R/f_index.03.R_end";
 
                             Vector3 position = target.gameObject.transform.Find(handPath).position;
 
@@ -3067,7 +3067,7 @@ Piece Name: {gunTarget.name}";
         public static void AngryBirdsSounds()
         {
             if (!dynamicSounds) return;
-            Slingshot slingshot = VRRig.LocalRig.GetSlingshot();
+            Slingshot slingshot = VRRig.LocalRig.GetSlingshot() as Slingshot;
 
             if (!slingshot) return;
 
@@ -3086,7 +3086,7 @@ Piece Name: {gunTarget.name}";
                 if (oldIndex == -1)
                     oldIndex = VRRig.LocalRig.ActiveTransferrableObjectIndex(0);
                 if (slingshot == null)
-                    slingshot = VRRig.LocalRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/body/Slingshot Chest Snap/DropZoneAnchor/Slingshot").GetComponent<Slingshot>();
+                    slingshot = VRRig.LocalRig.transform.Find("rig/body_pivot/Slingshot Chest Snap/DropZoneAnchor/Slingshot").GetComponent<Slingshot>();
                 VRRig.LocalRig.SetActiveTransferrableObjectIndex(0, active ? 212 : oldIndex);
                 slingshot.gameObject.SetActive(active);
             }
@@ -3094,7 +3094,7 @@ Piece Name: {gunTarget.name}";
         }
         public static void SlingshotHelper()
         {
-            Slingshot slingshot = VRRig.LocalRig.GetSlingshot();
+            Slingshot slingshot = VRRig.LocalRig.GetSlingshot() as Slingshot;
             if (slingshot == null)
                 return;
 
@@ -3117,7 +3117,7 @@ Piece Name: {gunTarget.name}";
                     paintbrawlTriggerLine.gameObject.SetActive(false);
             }
 
-            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot();
+            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot() as Slingshot;
             if (localSlingshot == null || !localSlingshot.InDrawingState())
                 return;
 
@@ -5862,6 +5862,15 @@ Piece Name: {gunTarget.name}";
             nameCycleDebounce = cycleSpeedIndex / 2f;
             Buttons.GetIndex("Change Cycle Delay").overlapText = "Change Name Cycle Delay <color=grey>[</color><color=green>" + nameCycleDebounce + "</color><color=grey>]</color>";
         }
+
+        public static void GoldenNameTag(bool isGolden)
+        {
+			VRRig.LocalRig.ShowGoldNameTag = isGolden;
+            VRRig.LocalRig.playerText1.color = VRRig.LocalRig.ShowGoldNameTag ? SubscriptionManager.SUBSCRIBER_NAME_COLOR : Color.white;
+		}
+
+        public static void FlashNameTag() =>
+            GoldenNameTag((Time.time % 0.2f) > 0.1f);
 
         public static void NameCycle(string[] names)
         {

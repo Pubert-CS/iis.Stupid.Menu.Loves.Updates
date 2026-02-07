@@ -82,7 +82,7 @@ using Random = UnityEngine.Random;
 
 namespace iiMenu.Menu
 {
-    [HarmonyPatch(typeof(GTPlayer), "LateUpdate")]
+    [HarmonyPatch(typeof(GTPlayer), nameof(GTPlayer.LateUpdate))]
     public class Main : MonoBehaviour // Do not get rid of this. I don't know why, the entire class kills itself.
     {
         /// <summary>
@@ -1083,7 +1083,7 @@ namespace iiMenu.Menu
 
                         GhostRig.transform.Find("VR Constraints/LeftArm/Left Arm IK/SlideAudio").gameObject.SetActive(false);
                         GhostRig.transform.Find("VR Constraints/RightArm/Right Arm IK/SlideAudio").gameObject.SetActive(false);
-                        GhostRig.transform.Find("GorillaPlayerNetworkedRigAnchor/rig/bodySlideAudio").gameObject.SetActive(false);
+                        GhostRig.transform.Find("rig/body_pivot/SlideAudio").gameObject.SetActive(false);
                         GhostRig.GetComponent<OwnershipGaurd>().enabled = false;
 
                         Visuals.FixRigMaterialESPColors(GhostRig);
